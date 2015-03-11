@@ -61,7 +61,9 @@ DocProject/Help/*.hhp
 DocProject/Help/Html2
 DocProject/Help/html
 
-# NuGet Packages Directory
+# NuGet
+nuget.exe
+*.nupkg
 ## TODO: If you have NuGet Package Restore enabled, uncomment the next line
 #packages/
 
