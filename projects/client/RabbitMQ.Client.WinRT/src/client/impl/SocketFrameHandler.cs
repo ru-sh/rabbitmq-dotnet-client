@@ -103,7 +103,7 @@ namespace RabbitMQ.Client.Impl
                         ar.Close();
                 }
             }
-            m_reader = new NetworkBinaryReader(m_socket.InputStream.AsStreamForRead());
+            m_reader = new NetworkBinaryReader(m_socket.InputStream, cts);
             m_writer = new NetworkBinaryWriter(m_socket.OutputStream.AsStreamForWrite());
         }
 

@@ -14,8 +14,9 @@
     <AppDesignerFolder>properties</AppDesignerFolder>
     <RootNamespace>RabbitMQ.Client.Test</RootNamespace>
     <AssemblyName>unit-tests</AssemblyName>
-    <TargetFrameworkVersion>$(PropTargetFramework)</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -25,6 +26,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,6 +35,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <!-- SSL test support, SSL_CERTS_DIR is typically pointed at ../rabbitmq-test/certs (absolute path) -->
   <!-- I'd use the Choose construct for this, but it seems broken on Mono -->
@@ -86,7 +89,6 @@
     <Compile Include="src\unit\TestBasicGet.cs" />
     <Compile Include="src\unit\TestBatchingWorkPool.cs" />
     <Compile Include="src\unit\TestBlockingCell.cs" />
-    <Compile Include="src\unit\TestBytesWireFormatting.cs" />
     <Compile Include="src\unit\TestChannelAllocation.cs" />
     <Compile Include="src\unit\TestConfirmSelect.cs" />
     <Compile Include="src\unit\TestConnectionBlocked.cs" />
@@ -110,9 +112,7 @@
     <Compile Include="src\unit\TestIntAllocator.cs" />
     <Compile Include="src\unit\TestInvalidAck.cs" />
     <Compile Include="src\unit\TestMainLoop.cs" />
-    <Compile Include="src\unit\TestMapMessage.cs" />
     <Compile Include="src\unit\TestMessageCount.cs" />
-    <Compile Include="src\unit\TestMessagePatternsSubscription.cs" />
     <Compile Include="src\unit\TestMethodArgumentCodec.cs" />
     <Compile Include="src\unit\TestModelShutdown.cs" />
     <Compile Include="src\unit\TestNetworkBinaryCodec.cs" />
@@ -124,7 +124,6 @@
     <Compile Include="src\unit\TestRecoverAfterCancel.cs" />
     <Compile Include="src\unit\TestSharedQueue.cs" />
     <Compile Include="src\unit\TestSsl.cs" />
-    <Compile Include="src\unit\TestStreamWireFormatting.cs" />
     <Compile Include="src\unit\WireFormattingFixture.cs" />
   </ItemGroup>
   <ItemGroup>

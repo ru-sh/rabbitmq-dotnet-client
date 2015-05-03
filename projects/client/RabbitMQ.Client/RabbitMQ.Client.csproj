@@ -9,6 +9,7 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <OldToolsVersion>3.5</OldToolsVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <Import Project="$(LocalPropsFile)" />
   <!-- MSBuild Community Tasks -->
@@ -88,7 +89,7 @@
     <AppDesignerFolder>properties</AppDesignerFolder>
     <RootNamespace>RabbitMQ.Client</RootNamespace>
     <AssemblyName>RabbitMQ.Client</AssemblyName>
-    <TargetFrameworkVersion>$(PropTargetFramework)</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -104,6 +105,7 @@
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <RegisterForComInterop>false</RegisterForComInterop>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -118,6 +120,7 @@
     <RegisterForComInterop>false</RegisterForComInterop>
     <SignAssembly Condition="'$(PropKeyfile)' != ''">true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(PropKeyfile)</AssemblyOriginatorKeyFile>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src\client\api\AmqpTcpEndpoint.cs" />
@@ -157,26 +160,6 @@
     <Compile Include="src\client\api\SslHelper.cs" />
     <Compile Include="src\client\api\SslOption.cs" />
     <Compile Include="src\client\api\TopologyRecoveryException.cs" />
-    <Compile Include="src\client\content\BasicMessageBuilder.cs" />
-    <Compile Include="src\client\content\BasicMessageReader.cs" />
-    <Compile Include="src\client\content\BytesMessageBuilder.cs" />
-    <Compile Include="src\client\content\BytesMessageReader.cs" />
-    <Compile Include="src\client\content\BytesWireFormatting.cs" />
-    <Compile Include="src\client\content\IBytesMessageBuilder.cs" />
-    <Compile Include="src\client\content\IBytesMessageReader.cs" />
-    <Compile Include="src\client\content\IMapMessageBuilder.cs" />
-    <Compile Include="src\client\content\IMapMessageReader.cs" />
-    <Compile Include="src\client\content\IMessageBuilder.cs" />
-    <Compile Include="src\client\content\IMessageReader.cs" />
-    <Compile Include="src\client\content\IStreamMessageBuilder.cs" />
-    <Compile Include="src\client\content\IStreamMessageReader.cs" />
-    <Compile Include="src\client\content\MapMessageBuilder.cs" />
-    <Compile Include="src\client\content\MapMessageReader.cs" />
-    <Compile Include="src\client\content\MapWireFormatting.cs" />
-    <Compile Include="src\client\content\PrimitiveParser.cs" />
-    <Compile Include="src\client\content\StreamMessageBuilder.cs" />
-    <Compile Include="src\client\content\StreamMessageReader.cs" />
-    <Compile Include="src\client\content\StreamWireFormatting.cs" />
     <Compile Include="src\client\events\BasicAckEventArgs.cs" />
     <Compile Include="src\client\events\BasicDeliverEventArgs.cs" />
     <Compile Include="src\client\events\BasicNackEventArgs.cs" />
@@ -251,10 +234,6 @@
     <Compile Include="src\client\impl\UnexpectedFrameException.cs" />
     <Compile Include="src\client\impl\UnknownClassOrMethodException.cs" />
     <Compile Include="src\client\impl\WireFormatting.cs" />
-    <Compile Include="src\client\messagepatterns\ISubscription.cs" />
-    <Compile Include="src\client\messagepatterns\SimpleRpcClient.cs" />
-    <Compile Include="src\client\messagepatterns\SimpleRpcServer.cs" />
-    <Compile Include="src\client\messagepatterns\Subscription.cs" />
     <Compile Include="src\util\**\*.cs" />
   </ItemGroup>
   <ItemGroup>

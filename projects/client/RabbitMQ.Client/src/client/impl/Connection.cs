@@ -53,8 +53,10 @@ using Windows.Networking.Sockets;
 using Windows.ApplicationModel;
 
 #else
+
 using System.Net;
 using System.Net.Sockets;
+
 #endif
 
 using System.Reflection;
@@ -271,10 +273,12 @@ namespace RabbitMQ.Client.Framing.Impl
         public AmqpTcpEndpoint[] KnownHosts { get; set; }
 
 #if !NETFX_CORE
+
         public EndPoint LocalEndPoint
         {
             get { return m_frameHandler.LocalEndPoint; }
         }
+
 #endif
 
         public int LocalPort
@@ -290,10 +294,12 @@ namespace RabbitMQ.Client.Framing.Impl
         }
 
 #if !NETFX_CORE
+
         public EndPoint RemoteEndPoint
         {
             get { return m_frameHandler.RemoteEndPoint; }
         }
+
 #endif
 
         public int RemotePort
@@ -320,7 +326,7 @@ namespace RabbitMQ.Client.Framing.Impl
 #if NETFX_CORE
  System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(Connection)).Assembly;
 #else
-                System.Reflection.Assembly.GetAssembly(typeof(Connection));
+ System.Reflection.Assembly.GetAssembly(typeof(Connection));
 #endif
 
             string version = assembly.GetName().Version.ToString();
@@ -523,6 +529,7 @@ namespace RabbitMQ.Client.Framing.Impl
         }
 
 #else
+
         /// <remarks>
         /// We need to close the socket, otherwise attempting to unload the domain
         /// could cause a CannotUnloadAppDomainException
@@ -531,6 +538,7 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             Abort(Constants.InternalError, "Domain Unload");
         }
+
 #endif
 
         public void HandleMainLoopException(ShutdownEventArgs reason)
@@ -588,7 +596,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 HandleMainLoopException(new ShutdownEventArgs(
                     ShutdownInitiator.Library,
                     0,
-                    "End of stream",
+                    "Heartbeat frame transmission failure",
                     e));
                 shouldTerminate = true;
             }

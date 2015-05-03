@@ -38,13 +38,13 @@
 //  Copyright (c) 2007-2014 GoPivotal, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
+using RabbitMQ.Client.Exceptions;
+using RabbitMQ.Util;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using RabbitMQ.Client.Exceptions;
-using RabbitMQ.Util;
 
 namespace RabbitMQ.Client.Impl
 {
@@ -117,15 +117,19 @@ namespace RabbitMQ.Client.Impl
                 case 'S':
                     value = ReadLongstr(reader);
                     break;
+
                 case 'I':
                     value = reader.ReadInt32();
                     break;
+
                 case 'D':
                     value = ReadDecimal(reader);
                     break;
+
                 case 'T':
                     value = ReadTimestamp(reader);
                     break;
+
                 case 'F':
                     value = ReadTable(reader);
                     break;
@@ -133,27 +137,35 @@ namespace RabbitMQ.Client.Impl
                 case 'A':
                     value = ReadArray(reader);
                     break;
+
                 case 'b':
                     value = reader.ReadSByte();
                     break;
+
                 case 'd':
                     value = reader.ReadDouble();
                     break;
+
                 case 'f':
                     value = reader.ReadSingle();
                     break;
+
                 case 'l':
                     value = reader.ReadInt64();
                     break;
+
                 case 's':
                     value = reader.ReadInt16();
                     break;
+
                 case 't':
                     value = (ReadOctet(reader) != 0);
                     break;
+
                 case 'x':
                     value = new BinaryTableValue(ReadLongstr(reader));
                     break;
+
                 case 'V':
                     value = null;
                     break;

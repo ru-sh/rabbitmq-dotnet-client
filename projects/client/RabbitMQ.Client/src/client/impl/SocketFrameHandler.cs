@@ -109,6 +109,7 @@ namespace RabbitMQ.Client.Impl
                     throw;
                 }
             }
+
             m_reader = new NetworkBinaryReader(new BufferedStream(netstream));
             m_writer = new NetworkBinaryWriter(new BufferedStream(netstream));
         }

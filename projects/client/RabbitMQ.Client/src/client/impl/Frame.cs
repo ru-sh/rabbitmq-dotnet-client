@@ -45,7 +45,9 @@ using System;
 using System.IO;
 
 #if NETFX_CORE
+
 using Windows.Networking.Sockets;
+
 #else
 
 using System.Net.Sockets;
@@ -118,7 +120,12 @@ namespace RabbitMQ.Client.Impl
             }
         }
 
+#if NETFX_CORE
         public static Frame ReadFrom(NetworkBinaryReader reader)
+#else
+
+        public static Frame ReadFrom(NetworkBinaryReader reader)
+#endif
         {
             int type;
 
