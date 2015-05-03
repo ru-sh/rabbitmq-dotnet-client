@@ -120,12 +120,7 @@ namespace RabbitMQ.Client.Impl
             }
         }
 
-#if NETFX_CORE
         public static Frame ReadFrom(NetworkBinaryReader reader)
-#else
-
-        public static Frame ReadFrom(NetworkBinaryReader reader)
-#endif
         {
             int type;
 
@@ -136,6 +131,8 @@ namespace RabbitMQ.Client.Impl
             catch (IOException ioe)
             {
 #if NETFX_CORE
+                System.Diagnostics.Debug.WriteLine("ReadFrame e: {0}", ioe);
+
                 if (ioe.InnerException != null
                     && SocketError.GetStatus(ioe.InnerException.HResult) == SocketErrorStatus.ConnectionTimedOut)
                 {

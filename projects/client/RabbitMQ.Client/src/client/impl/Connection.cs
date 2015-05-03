@@ -651,7 +651,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 }
                 catch (EndOfStreamException eose)
                 {
-                    // Possible heartbeat exception
+                    // Socket is dead
                     HandleMainLoopException(new ShutdownEventArgs(
                         ShutdownInitiator.Library,
                         0,
@@ -768,7 +768,20 @@ namespace RabbitMQ.Client.Framing.Impl
                     }
                 }
             }
-#if !NETFX_CORE
+#if NETFX_CORE
+            catch (TimeoutException te)
+            {
+                HandleIOException(te);
+            }
+            catch (AggregateException ae)
+            {
+                ShutdownDueToDeadSocket("End of stream");
+            }
+            catch (EndOfStreamException eose)
+            {
+                ShutdownDueToDeadSocket("End of stream");
+            }
+#else
             catch (SocketException ioe)
             {
                 HandleIOException(ioe);
@@ -787,6 +800,7 @@ namespace RabbitMQ.Client.Framing.Impl
 
         protected void HandleIOException(Exception e)
         {
+            System.Diagnostics.Debug.WriteLine("I/O e: {0}", e);
             // socket error when in negotiation, throw BrokerUnreachableException
             // immediately
             if (m_inConnectionNegotiation)
@@ -800,15 +814,20 @@ namespace RabbitMQ.Client.Framing.Impl
                 var description =
                     String.Format("Peer missed 2 heartbeats with heartbeat timeout set to {0} seconds",
                                   m_heartbeat);
-                var eose = new EndOfStreamException(description);
-                m_shutdownReport.Add(new ShutdownReportEntry(description, eose));
-                HandleMainLoopException(new ShutdownEventArgs(ShutdownInitiator.Library,
-                                                              0,
-                                                              "End of stream",
-                                                              eose));
-                TerminateMainloop();
-                FinishClose();
+                ShutdownDueToDeadSocket(description);
             }
+        }
+
+        protected void ShutdownDueToDeadSocket(string description)
+        {
+            var eose = new EndOfStreamException(description);
+            m_shutdownReport.Add(new ShutdownReportEntry(description, eose));
+            HandleMainLoopException(new ShutdownEventArgs(ShutdownInitiator.Library,
+                                                          0,
+                                                          "End of stream",
+                                                          eose));
+            TerminateMainloop();
+            FinishClose();
         }
 
         public void NotifyReceivedCloseOk()
@@ -1214,10 +1233,10 @@ entry.ToString());
 
             var connectionStart = (ConnectionStartDetails)
                 connectionStartCell.Value;
-
+            System.Diagnostics.Debug.WriteLine("Received connection.start {0}", connectionStart);
             if (connectionStart == null)
             {
-                throw new IOException("connection.start was never received, likely due to a network timeout");
+                throw new EndOfStreamException("connection.start was never received, likely due to a network timeout");
             }
 
             ServerProperties = connectionStart.m_serverProperties;
@@ -1301,6 +1320,7 @@ entry.ToString());
             var heartbeat = (ushort)NegotiatedMaxValue(m_factory.RequestedHeartbeat,
                 connectionTune.m_heartbeat);
             Heartbeat = heartbeat;
+            System.Diagnostics.Debug.WriteLine("Negotiated heartbeat to {0}", heartbeat);
 
             m_model0.ConnectionTuneOk(channelMax,
                 frameMax,

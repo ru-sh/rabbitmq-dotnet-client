@@ -39,10 +39,12 @@
 //---------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.Foundation;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 
@@ -53,30 +55,33 @@ namespace RabbitMQ.Util
     /// </summary>
     public class NetworkBinaryReader
     {
-        private IInputStream m_baseStream;
         private DataReader m_input;
-        private CancellationTokenSource m_cts;
+
+        // per-operation timeout
+        private int m_timeout;
 
         /// <summary>
         /// Construct a NetworkBinaryReader over the given input stream.
         /// </summary>
-        public NetworkBinaryReader(IInputStream input, CancellationTokenSource cts)
+        public NetworkBinaryReader(IInputStream input)
         {
-            m_baseStream = input;
             m_input = new DataReader(input);
             m_input.UnicodeEncoding = UnicodeEncoding.Utf8;
             m_input.ByteOrder = ByteOrder.BigEndian;
-
-            m_cts = cts;
         }
 
         public NetworkBinaryReader(Stream input)
         {
-            m_baseStream = input.AsInputStream();
             m_input = new DataReader(input.AsInputStream());
 
             m_input.UnicodeEncoding = UnicodeEncoding.Utf8;
             m_input.ByteOrder = ByteOrder.BigEndian;
+        }
+
+        public int Timeout
+        {
+            get { return m_timeout; }
+            set { m_timeout = value; }
         }
 
         ///<summary>Helper method for constructing a temporary
@@ -90,10 +95,9 @@ namespace RabbitMQ.Util
         {
             var op = m_input.LoadAsync(len);
             var nRead = await op;
-            if (nRead <= 0 || op.Status != Windows.Foundation.AsyncStatus.Completed)
+            if (nRead <= 0 || op.Status != AsyncStatus.Completed)
             {
-                m_cts.Cancel();
-                return 0;
+                throw new EndOfStreamException();
             }
             else
             {
@@ -103,24 +107,34 @@ namespace RabbitMQ.Util
 
         async public Task<byte[]> ReadBytesAsync(uint len)
         {
-            var nRead = await m_input.LoadAsync(len);
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(m_timeout);
+            uint nRead;
 
-            if (nRead > 0)
+            // TODO: this is not as efficient as it can be
+            //       and largely matches how the non-WinRT NetworkBinaryReader
+            //       works at the moment. Both should be moved to async/await
+            //       eventually.
+            var op = LoadAsync(len);
+            if (op.Wait(m_timeout))
             {
-                var bytes = new byte[len];
-                m_input.ReadBytes(bytes);
+                nRead = await op;
+                if (nRead > 0)
+                {
+                    var bytes = new byte[len];
+                    m_input.ReadBytes(bytes);
 
-                return bytes;
+                    return bytes;
+                }
+                else
+                {
+                    throw new EndOfStreamException();
+                }
             }
             else
             {
-                throw new EndOfStreamException();
+                throw new TimeoutException();
             }
-        }
-
-        public Stream BaseStream
-        {
-            get { return (Stream)m_baseStream; }
         }
 
         public byte[] ReadBytes(uint len)
@@ -128,7 +142,7 @@ namespace RabbitMQ.Util
             Task<byte[]> future = ReadBytesAsync(len);
             if (future.IsFaulted || future.IsCanceled)
             {
-                throw new EndOfStreamException();
+                throw future.Exception;
             }
             else
             {
@@ -143,13 +157,15 @@ namespace RabbitMQ.Util
 
         public byte ReadByte()
         {
-            LoadAsync(1).Wait(m_cts.Token);
+            var cts = new CancellationTokenSource(m_timeout);
+            LoadAsync(1).Wait(cts.Token);
             return m_input.ReadByte();
         }
 
         public sbyte ReadSByte()
         {
-            LoadAsync(1).Wait(m_cts.Token);
+            var cts = new CancellationTokenSource(m_timeout);
+            LoadAsync(1).Wait(cts.Token);
             return (sbyte)m_input.ReadByte();
         }
 

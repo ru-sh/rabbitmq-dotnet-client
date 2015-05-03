@@ -67,6 +67,7 @@ namespace RabbitMQ.Client.Impl
         private bool _closed = false;
         private readonly object _semaphore = new object();
 
+        private const int handshakeTimeout = 10000;
         private int? defaultTimeout;
 
         public SocketFrameHandler(AmqpTcpEndpoint endpoint,
@@ -84,8 +85,7 @@ namespace RabbitMQ.Client.Impl
                 try
                 {
                     cts = new CancellationTokenSource();
-                    if (this.defaultTimeout.HasValue)
-                        cts.CancelAfter(this.defaultTimeout.Value);
+                    cts.CancelAfter(handshakeTimeout);
 
                     ar = this.m_socket.UpgradeToSslAsync(
                         SocketProtectionLevel.Ssl, new HostName(endpoint.Ssl.ServerName));
@@ -103,7 +103,8 @@ namespace RabbitMQ.Client.Impl
                         ar.Close();
                 }
             }
-            m_reader = new NetworkBinaryReader(m_socket.InputStream, cts);
+            m_reader = new NetworkBinaryReader(m_socket.InputStream);
+            m_reader.Timeout = timeout;
             m_writer = new NetworkBinaryWriter(m_socket.OutputStream.AsStreamForWrite());
         }
 
@@ -135,11 +136,7 @@ namespace RabbitMQ.Client.Impl
         {
             set
             {
-                defaultTimeout = value;
-                if (cts != null && cts.Token.CanBeCanceled)
-                {
-                    cts.CancelAfter(value);
-                }
+                m_reader.Timeout = value;
             }
         }
 

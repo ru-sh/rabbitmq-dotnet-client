@@ -91,9 +91,7 @@ namespace RabbitMQ.Client.Impl
         {
             IList array = new List<object>();
             long arrayLength = reader.ReadUInt32();
-            Stream backingStream = reader.BaseStream;
-            long startPosition = backingStream.Position;
-            while ((backingStream.Position - startPosition) < arrayLength)
+            while (array.Count < arrayLength)
             {
                 object value = ReadFieldValue(reader);
                 array.Add(value);
@@ -226,10 +224,7 @@ namespace RabbitMQ.Client.Impl
         {
             IDictionary<string, object> table = new Dictionary<string, object>();
             long tableLength = reader.ReadUInt32();
-
-            Stream backingStream = reader.BaseStream;
-            long startPosition = backingStream.Position;
-            while ((backingStream.Position - startPosition) < tableLength)
+            while (table.Count < tableLength)
             {
                 string key = ReadShortstr(reader);
                 object value = ReadFieldValue(reader);
