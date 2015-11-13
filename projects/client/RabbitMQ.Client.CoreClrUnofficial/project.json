@@ -1,0 +1,54 @@
+﻿{
+  "namedResource": {
+    
+  },
+  "version": "3.5.6",
+  "description": "RabbitMQ .NET Client",
+  "tags": [ "" ],
+  "projectUrl": "",
+  "licenseUrl": "",
+
+  "dependencies": {
+  },
+
+  "frameworks": {
+    "dnxcore50": {
+      "dependencies": {
+        "System.Runtime": "4.0.20",
+        "System.Runtime.Extensions": "4.0.10",
+
+        "System.Collections.Concurrent": "4.0.11-beta-23409",
+        "System.Linq": "4.0.1-beta-23409",
+        "System.Text.Encoding": "4.0.11-*",
+        "System.Console": "4.0.0-beta-23409",
+        "System.Text.Encoding.CodePages": "4.0.1-beta-23409",
+
+        "System.Net.Sockets": "4.1.0-beta-23409",
+        "System.Net.Security": "4.0.0-beta-23409",
+        "System.Net.Primitives": "4.0.11-beta-23409",
+        "System.Net.Requests": "4.0.11-beta-23409",
+
+        "System.Xml.ReaderWriter": "4.0.11-beta-23409",
+        "System.Xml.XDocument": "4.0.11-beta-23409",
+        "System.Xml.XmlDocument": "4.0.1-beta-23409",
+
+        "System.Threading": "4.0.11-beta-23409",
+        "System.Threading.Tasks": "4.0.11-beta-23413",
+        "System.Threading.Timer": "4.0.1-beta-23413",
+        "System.Threading.Thread": "4.0.0-beta-23413",
+
+
+        "System.Diagnostics.Tracing": "4.0.21-beta-23413",
+        "System.Diagnostics.TraceSource": "4.0.0-beta-23409",
+
+        "System.Runtime.Serialization.Xml": "4.0.11-beta-*",
+        "System.Xml.XmlSerializer": "4.0.11-beta-*",
+        "System.Security.Cryptography.X509Certificates": "4.0.0-beta-23409"
+      }
+    }
+  },
+  "exclude": [
+    "build",
+    "src/util/XmlUtil.cs"
+  ]
+}

@@ -46,6 +46,7 @@ using System.Net;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
@@ -75,7 +76,7 @@ namespace RabbitMQ.Client.Impl
                 try
                 {
                     m_socket = socketFactory(AddressFamily.InterNetworkV6);
-                    Connect(m_socket, endpoint, timeout);
+                    Connect(m_socket, endpoint, timeout).Wait(timeout);
                 }
                 catch (ConnectFailureException) // could not connect using IPv6
                 {
@@ -91,7 +92,7 @@ namespace RabbitMQ.Client.Impl
             if (m_socket == null)
             {
                 m_socket = socketFactory(AddressFamily.InterNetwork);
-                Connect(m_socket, endpoint, timeout);
+                Connect(m_socket, endpoint, timeout).Wait(timeout);
             }
 
             Stream netstream = m_socket.GetStream();
@@ -111,8 +112,8 @@ namespace RabbitMQ.Client.Impl
                     throw;
                 }
             }
-            m_reader = new NetworkBinaryReader(new BufferedStream(netstream));
-            m_writer = new NetworkBinaryWriter(new BufferedStream(netstream));
+            m_reader = new NetworkBinaryReader((netstream));
+            m_writer = new NetworkBinaryWriter((netstream));
         }
 
         public AmqpTcpEndpoint Endpoint { get; set; }
@@ -174,7 +175,7 @@ namespace RabbitMQ.Client.Impl
                         {
                             // ignore, we are closing anyway
                         };
-                        m_socket.Close();
+                        m_socket.Dispose();
                     }
                     catch (Exception _)
                     {
@@ -200,7 +201,7 @@ namespace RabbitMQ.Client.Impl
         {
             lock (m_writer)
             {
-                m_writer.Write(Encoding.ASCII.GetBytes("AMQP"));
+                m_writer.Write(new byte[] {0x41, 0x4D, 0x51, 0x50}); //Encoding.ASCII.GetBytes("AMQP"));
                 if (Endpoint.Protocol.Revision != 0)
                 {
                     m_writer.Write((byte)0);
@@ -250,18 +251,12 @@ namespace RabbitMQ.Client.Impl
             }
         }
 
-        private void Connect(TcpClient socket, AmqpTcpEndpoint endpoint, int timeout)
+        private async Task Connect(TcpClient socket, AmqpTcpEndpoint endpoint, int timeout)
         {
-            IAsyncResult ar = null;
             try
             {
-                ar = socket.BeginConnect(endpoint.HostName, endpoint.Port, null, null);
-                if (!ar.AsyncWaitHandle.WaitOne(timeout, false))
-                {
-                    socket.Close();
-                    throw new TimeoutException("Connection to " + endpoint + " timed out");
-                }
-                socket.EndConnect(ar);
+                // todo use timeout
+                await socket.ConnectAsync(endpoint.HostName, endpoint.Port);
             }
             catch (ArgumentException e)
             {
@@ -270,13 +265,6 @@ namespace RabbitMQ.Client.Impl
             catch (SocketException e)
             {
                 throw new ConnectFailureException("Connection failed", e);
-            }
-            finally
-            {
-                if (ar != null)
-                {
-                    ar.AsyncWaitHandle.Close();
-                }
             }
         }
     }

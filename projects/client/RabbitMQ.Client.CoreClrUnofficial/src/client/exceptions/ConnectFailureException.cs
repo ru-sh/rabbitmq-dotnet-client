@@ -40,21 +40,14 @@
 
 using System;
 
-namespace RabbitMQ.Client
+namespace RabbitMQ.Client.Exceptions
 {
-    /// <summary>
-    /// A decoded AMQP content header frame.
-    /// </summary>
-    public interface IContentHeader : ICloneable
+    /// <summary>Thrown when a connection to the broker fails</summary>
+    public class ConnectFailureException : Exception
     {
-        /// <summary>
-        /// Retrieve the AMQP class ID of this content header.
-        /// </summary>
-        int ProtocolClassId { get; }
-
-        /// <summary>
-        /// Retrieve the AMQP class name of this content header.
-        /// </summary>
-        string ProtocolClassName { get; }
+        public ConnectFailureException(String msg, Exception inner)
+            : base(msg, inner)
+        {
+        }
     }
 }

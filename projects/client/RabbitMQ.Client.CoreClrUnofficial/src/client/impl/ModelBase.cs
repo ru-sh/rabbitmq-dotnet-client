@@ -66,8 +66,9 @@ namespace RabbitMQ.Client.Impl
         private readonly object m_flowSendLock = new object();
         private readonly object m_shutdownLock = new object();
 
-        private readonly SynchronizedCollection<ulong> m_unconfirmedSet =
-            new SynchronizedCollection<ulong>();
+        private readonly object m_unconfirmedSetSync = new {};
+        private readonly List<ulong> m_unconfirmedSet =
+            new List<ulong>();
 
         private EventHandler<BasicAckEventArgs> m_basicAck;
         private EventHandler<BasicNackEventArgs> m_basicNack;
@@ -629,8 +630,8 @@ namespace RabbitMQ.Client.Impl
                     }
                 }
             }
-            lock (m_unconfirmedSet.SyncRoot)
-                Monitor.Pulse(m_unconfirmedSet.SyncRoot);
+            lock (m_unconfirmedSetSync)
+                Monitor.Pulse(m_unconfirmedSetSync);
             m_flowControlBlock.Set();
         }
 
@@ -1241,7 +1242,7 @@ namespace RabbitMQ.Client.Impl
             }
             if (NextPublishSeqNo > 0)
             {
-                lock (m_unconfirmedSet.SyncRoot)
+                lock (m_unconfirmedSetSync)
                 {
                     if (!m_unconfirmedSet.Contains(NextPublishSeqNo))
                     {
@@ -1479,7 +1480,7 @@ namespace RabbitMQ.Client.Impl
             }
             bool isWaitInfinite = (timeout.TotalMilliseconds == Timeout.Infinite);
             Stopwatch stopwatch = Stopwatch.StartNew();
-            lock (m_unconfirmedSet.SyncRoot)
+            lock (m_unconfirmedSetSync)
             {
                 while (true)
                 {
@@ -1497,13 +1498,12 @@ namespace RabbitMQ.Client.Impl
                     }
                     if (isWaitInfinite)
                     {
-                        Monitor.Wait(m_unconfirmedSet.SyncRoot);
+                        Monitor.Wait(m_unconfirmedSetSync);
                     }
                     else
                     {
                         TimeSpan elapsed = stopwatch.Elapsed;
-                        if (elapsed > timeout || !Monitor.Wait(
-                            m_unconfirmedSet.SyncRoot, timeout - elapsed))
+                        if (elapsed > timeout || !Monitor.Wait(m_unconfirmedSetSync, timeout - elapsed))
                         {
                             timedOut = true;
                             return true;
@@ -1555,7 +1555,7 @@ namespace RabbitMQ.Client.Impl
 
         protected virtual void handleAckNack(ulong deliveryTag, bool multiple, bool isNack)
         {
-            lock (m_unconfirmedSet.SyncRoot)
+            lock (m_unconfirmedSetSync)
             {
                 if (multiple)
                 {
@@ -1576,7 +1576,7 @@ namespace RabbitMQ.Client.Impl
                 m_onlyAcksReceived = m_onlyAcksReceived && !isNack;
                 if (m_unconfirmedSet.Count == 0)
                 {
-                    Monitor.Pulse(m_unconfirmedSet.SyncRoot);
+                    Monitor.Pulse(m_unconfirmedSetSync);
                 }
             }
         }

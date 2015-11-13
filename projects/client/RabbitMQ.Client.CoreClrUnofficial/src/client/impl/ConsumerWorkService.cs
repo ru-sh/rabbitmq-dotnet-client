@@ -54,7 +54,8 @@ namespace RabbitMQ.Client
             }
             catch (Exception e)
             {
-                Thread.CurrentThread.Interrupt();
+                throw;
+                //Thread.CurrentThread.Interrupt();
             }
         }
 

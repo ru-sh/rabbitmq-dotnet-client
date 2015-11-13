@@ -47,7 +47,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Timer = System.Timers.Timer;
 
 namespace RabbitMQ.Client.Framing.Impl
 {

@@ -122,7 +122,7 @@ namespace RabbitMQ.Client.Framing.Impl
             StartMainLoop(factory.UseBackgroundThreadsForIO);
             Open(insist);
 
-            AppDomain.CurrentDomain.DomainUnload += HandleDomainUnload;
+            //AppDomain.CurrentDomain.DomainUnload += HandleDomainUnload;
         }
 
         public event EventHandler<CallbackExceptionEventArgs> CallbackException
@@ -297,9 +297,7 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public static IDictionary<string, object> DefaultClientProperties()
         {
-            Assembly assembly =
-                Assembly.GetAssembly(typeof(Connection));
-            string version = assembly.GetName().Version.ToString();
+            string version = new Version(3,5,6).ToString();
             //TODO: Get the rest of this data from the Assembly Attributes
             IDictionary<string, object> table = new Dictionary<string, object>();
             table["product"] = Encoding.UTF8.GetBytes("RabbitMQ");
@@ -393,7 +391,7 @@ namespace RabbitMQ.Client.Framing.Impl
                     TerminateMainloop();
                 }
             }
-            if (!m_appContinuation.WaitOne(BlockingCell.validatedTimeout(timeout), true))
+            if (!m_appContinuation.WaitOne(BlockingCell.validatedTimeout(timeout)))
             {
                 m_frameHandler.Close();
             }
@@ -796,7 +794,7 @@ namespace RabbitMQ.Client.Framing.Impl
                     }
                 }
             }
-            AppDomain.CurrentDomain.DomainUnload -= HandleDomainUnload;
+            //AppDomain.CurrentDomain.DomainUnload -= HandleDomainUnload;
         }
 
         public void Open(bool insist)
@@ -899,11 +897,8 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             if (Heartbeat != 0)
             {
-                _heartbeatWriteTimer = new Timer(HeartbeatWriteTimerCallback);
-                _heartbeatWriteTimer.Change(TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
-
-                _heartbeatReadTimer = new Timer(HeartbeatReadTimerCallback);
-                _heartbeatReadTimer.Change(TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
+                _heartbeatWriteTimer = new Timer(HeartbeatWriteTimerCallback, null, TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
+                _heartbeatReadTimer = new Timer(HeartbeatReadTimerCallback, null, TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
             }
         }
 
@@ -922,7 +917,7 @@ namespace RabbitMQ.Client.Framing.Impl
             {
                 if (!m_closed)
                 {
-                    if (!m_heartbeatRead.WaitOne(0, false))
+                    if (!m_heartbeatRead.WaitOne(0))
                     {
                         m_missedHeartbeats++;
                     }
@@ -1179,7 +1174,7 @@ namespace RabbitMQ.Client.Framing.Impl
             bool tuned = false;
             try
             {
-                string mechanismsString = Encoding.UTF8.GetString(connectionStart.m_mechanisms);
+                string mechanismsString = Encoding.UTF8.GetString(connectionStart.m_mechanisms, 0 , connectionStart.m_mechanisms.Length);
                 string[] mechanisms = mechanismsString.Split(' ');
                 AuthMechanismFactory mechanismFactory = m_factory.AuthMechanismFactory(mechanisms);
                 if (mechanismFactory == null)
