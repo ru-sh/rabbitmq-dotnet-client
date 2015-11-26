@@ -152,10 +152,15 @@ namespace RabbitMQ.Util
             else
             {
                 Type t = value.GetType();
-                writer.WriteLine(t.FullName);
-                foreach (PropertyInfo pi in t.GetProperties(BindingFlags.Instance
+#if NET451 || NET46
+                var props = t.GetProperties(BindingFlags.Instance
                                                             | BindingFlags.Public
-                                                            | BindingFlags.DeclaredOnly))
+                                                            | BindingFlags.DeclaredOnly);
+#else
+                var props = value.GetType().GetTypeInfo().DeclaredProperties;
+#endif
+                writer.WriteLine(t.FullName);
+                foreach (var pi in props)
                 {
                     if (pi.GetIndexParameters().Length == 0)
                     {

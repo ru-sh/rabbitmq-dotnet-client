@@ -61,6 +61,7 @@ namespace RabbitMQ.Client.Impl
 
         public NetworkBinaryReader m_reader;
         public TcpClient m_socket;
+
         public NetworkBinaryWriter m_writer;
         private readonly object _semaphore = new object();
         private bool _closed;
@@ -175,7 +176,12 @@ namespace RabbitMQ.Client.Impl
                         {
                             // ignore, we are closing anyway
                         };
+
+#if NET451 || NET46
+                        m_socket.Close();
+#else
                         m_socket.Dispose();
+#endif
                     }
                     catch (Exception _)
                     {
