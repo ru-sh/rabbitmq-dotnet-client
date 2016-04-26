@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,12 +34,17 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
+
+#if NETFX_CORE
+using Windows.Networking.Sockets;
+#else
 using System.Net.Sockets;
+#endif
 
 namespace RabbitMQ.Client
 {
@@ -48,20 +53,33 @@ namespace RabbitMQ.Client
         /// <summary>
         /// Set custom socket options by providing a SocketFactory.
         /// </summary>
-        public Func<AddressFamily, TcpClient> SocketFactory = DefaultSocketFactory;
+#if NETFX_CORE
+        public Func<StreamSocket> SocketFactory = DefaultSocketFactory;
+#else
+        public Func<AddressFamily, ITcpClient> SocketFactory = DefaultSocketFactory;
+#endif
 
         /// <summary>
         /// Creates a new instance of the <see cref="TcpClient"/>.
         /// </summary>
         /// <param name="addressFamily">Specifies the addressing scheme.</param>
         /// <returns>New instance of a <see cref="TcpClient"/>.</returns>
-        public static TcpClient DefaultSocketFactory(AddressFamily addressFamily)
+#if NETFX_CORE
+        public static StreamSocket DefaultSocketFactory()
+        {
+            StreamSocket tcpClient = new StreamSocket();
+            tcpClient.Control.NoDelay = true;
+            return tcpClient;
+        }
+#else
+        public static ITcpClient DefaultSocketFactory(AddressFamily addressFamily)
         {
             var tcpClient = new TcpClient(addressFamily)
             {
                 NoDelay = true
             };
-            return tcpClient;
+            return new TcpClientAdapter(tcpClient);
         }
+#endif
     }
 }

@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
@@ -75,6 +75,11 @@ namespace RabbitMQ.Client.Impl
         public virtual ShutdownEventArgs Wait()
         {
             return (ShutdownEventArgs)m_cell.Value;
+        }
+
+        public ShutdownEventArgs Wait(TimeSpan timeout)
+        {
+            return (ShutdownEventArgs)m_cell.GetValue(timeout);
         }
     }
 }

@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
@@ -49,18 +49,15 @@ namespace RabbitMQ.Util
     ///<remarks>
     ///Not part of the public API.
     ///</remarks>
-    public class DebugUtil
+    public static class DebugUtil
     {
-        ///<summary>Private constructor - this class has no instances</summary>
-        private DebugUtil()
-        {
-        }
-
+#if !(NETFX_CORE)
         ///<summary>Print a hex dump of the supplied bytes to stdout.</summary>
         public static void Dump(byte[] bytes)
         {
             Dump(bytes, Console.Out);
         }
+#endif
 
         ///<summary>Print a hex dump of the supplied bytes to the supplied TextWriter.</summary>
         public static void Dump(byte[] bytes, TextWriter writer)
@@ -124,7 +121,7 @@ namespace RabbitMQ.Util
             else if (value is byte[])
             {
                 writer.WriteLine("byte[]");
-                Dump((byte[])value);
+                Dump((byte[])value, writer);
             }
             else if (value is ValueType)
             {
@@ -160,7 +157,13 @@ namespace RabbitMQ.Util
                 var props = value.GetType().GetTypeInfo().DeclaredProperties;
 #endif
                 writer.WriteLine(t.FullName);
-                foreach (var pi in props)
+#if !(NETFX_CORE)
+                foreach (PropertyInfo pi in t.GetProperties(BindingFlags.Instance
+                                                            | BindingFlags.Public
+                                                            | BindingFlags.DeclaredOnly))
+#else
+                foreach (PropertyInfo pi in t.GetRuntimeProperties())
+#endif
                 {
                     if (pi.GetIndexParameters().Length == 0)
                     {

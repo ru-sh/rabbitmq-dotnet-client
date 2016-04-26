@@ -48,6 +48,14 @@ set -x
 ### Disable sharing files by default (it causes things not to work properly)
 CYGWIN=nontsec
 
+### Change to this script's directory and copy the KEYFILE is any.
+cd $(dirname "$0")
+if [ -f "$KEYFILE" ]; then
+    cp "$KEYFILE" .
+    KEYFILE="$(basename "$KEYFILE")"
+    trap "rm \"$KEYFILE\"" EXIT
+fi
+
 . dist-lib.sh
 
 ### Overrideable vars
@@ -56,6 +64,7 @@ test "$RABBIT_VSN" || RABBIT_VSN=0.0.0.0
 test "$WEB_URL" || WEB_URL=http://stage.rabbitmq.com/
 test "$UNOFFICIAL_RELEASE" || UNOFFICIAL_RELEASE=
 test "$MONO_DIST" || MONO_DIST=
+test "$BUILD_WINRT" || BUILD_WINRT=false
 
 ### Other, general vars
 NAME=rabbitmq-dotnet-client
@@ -82,7 +91,7 @@ function main {
     ### we're building an official release
     if [ ! -f "$KEYFILE" ]; then
         if [ "$UNOFFICIAL_RELEASE" ]; then
-            sn -k $KEYFILE
+            sn -k "$KEYFILE"
         else
             echo "ERROR! Keyfile $KEYFILE not found."
             exit 1
@@ -105,7 +114,7 @@ function main {
 
 function dist-zips {
     # clean & build
-    dist-target-framework dotnet-4.0
+    dist-target-framework dotnet-4.5
 
     ### Source dist
     src-dist
@@ -154,6 +163,8 @@ function src-dist {
     cp README.in tmp/srcdist/README
     if [ -n "$NO_LINKS" ]; then
         touch tmp/srcdist/README
+    elif [ -f "$BUILD_DOC" ]; then
+        cp "$BUILD_DOC" tmp/srcdist/README
     else
         links -dump ${WEB_URL}build-dotnet-client.html >> tmp/srcdist/README
     fi
@@ -222,10 +233,10 @@ function gen-props {
     else
         USING_MONO="false"
     fi
-    sed -e "s:@VERSION@:$ASSEMBLY_VSN:g" \
-        -e "s:@KEYFILE@:$KEYFILE:g" \
-        -e "s:@USINGMONO@:$USING_MONO:g" \
-    < $1 > $2
+    # once our build infra is on Windows 8.1,
+    # we can enable WinRT builds
+    sed -e "s:@VERSION@:$ASSEMBLY_VSN:g" -e "s:@KEYFILE@:$KEYFILE:g" -e "s:@USINGMONO@:$USING_MONO:g" -e "s:@BUILDWINRT@:$BUILD_WINRT:g" < $1 > $2
+
 }
 
 function gendoc-dist {
@@ -290,4 +301,3 @@ function genhtml {
 
 
 main $@
-

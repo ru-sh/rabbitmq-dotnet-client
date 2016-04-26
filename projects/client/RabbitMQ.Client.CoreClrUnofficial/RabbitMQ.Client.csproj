@@ -72,7 +72,9 @@
   <Target Name="Detokenize" DependsOnTargets="CreateGensrcDir" Inputs="@(Tokenized); $(LocalPropsFile)" Outputs="@(Detokenized)">
     <Delete Files="@(Detokenized)" />
     <TemplateFile Template="$(AssemblyInfoTok)" OutputFilename="detok.out" Tokens="@(Tokens)" />
-    <Move SourceFiles="src\tokenized\detok.out" DestinationFiles="$(AssemblyInfoDetok)" />
+    <!-- <Move SourceFiles="src\tokenized\detok.out" DestinationFiles="$(AssemblyInfoDetok)" /> -->
+    <Copy SourceFiles="src\tokenized\detok.out" DestinationFiles="$(AssemblyInfoDetok)" />
+    <Delete Files="src\tokenized\detok.out" />
   </Target>
   <Target Name="CleanDetokenize">
     <Delete Files="@(Detokenized)" />
@@ -130,6 +132,7 @@
     <Compile Include="src\client\api\ConnectionFactory.cs" />
     <Compile Include="src\client\api\ConnectionFactoryBase.cs" />
     <Compile Include="src\client\api\DefaultBasicConsumer.cs" />
+    <Compile Include="src\client\api\Headers.cs" />
     <Compile Include="src\client\api\ExchangeType.cs" />
     <Compile Include="src\client\api\ExternalMechanism.cs" />
     <Compile Include="src\client\api\ExternalMechanismFactory.cs" />
@@ -138,12 +141,14 @@
     <Compile Include="src\client\api\IConnection.cs" />
     <Compile Include="src\client\api\IConnectionFactory.cs" />
     <Compile Include="src\client\api\IContentHeader.cs" />
+    <Compile Include="src\client\api\IHostnameSelector.cs" />
     <Compile Include="src\client\api\IMethod.cs" />
     <Compile Include="src\client\api\IModel.cs" />
     <Compile Include="src\client\api\IProtocol.cs" />
     <Compile Include="src\client\api\IQueueingBasicConsumer.cs" />
     <Compile Include="src\client\api\IRecoverable.cs" />
     <Compile Include="src\client\api\IStreamProperties.cs" />
+    <Compile Include="src\client\api\ITcpClient.cs" />
     <Compile Include="src\client\api\NetworkConnection.cs" />
     <Compile Include="src\client\api\PlainMechanism.cs" />
     <Compile Include="src\client\api\PlainMechanismFactory.cs" />
@@ -215,6 +220,7 @@
     <Compile Include="src\client\impl\ContentHeaderBase.cs" />
     <Compile Include="src\client\impl\ContentHeaderPropertyReader.cs" />
     <Compile Include="src\client\impl\ContentHeaderPropertyWriter.cs" />
+    <Compile Include="src\client\impl\ExtensionMethods.cs" />
     <Compile Include="src\client\impl\Frame.cs" />
     <Compile Include="src\client\impl\HardProtocolException.cs" />
     <Compile Include="src\client\impl\IConsumerDispatcher.cs" />
@@ -231,6 +237,7 @@
     <Compile Include="src\client\impl\ProtocolBase.cs" />
     <Compile Include="src\client\impl\ProtocolException.cs" />
     <Compile Include="src\client\impl\QuiescingSession.cs" />
+    <Compile Include="src\client\impl\RandomHostnameSelector.cs" />
     <Compile Include="src\client\impl\RecordedBinding.cs" />
     <Compile Include="src\client\impl\RecordedConsumer.cs" />
     <Compile Include="src\client\impl\RecordedEntity.cs" />
@@ -248,6 +255,8 @@
     <Compile Include="src\client\impl\SoftProtocolException.cs" />
     <Compile Include="src\client\impl\StreamProperties.cs" />
     <Compile Include="src\client\impl\SyntaxError.cs" />
+    <Compile Include="src\client\impl\TcpClientAdapter.cs" />
+    <Compile Include="src\client\impl\TunneledTcpClient.cs" />
     <Compile Include="src\client\impl\UnexpectedFrameException.cs" />
     <Compile Include="src\client\impl\UnknownClassOrMethodException.cs" />
     <Compile Include="src\client\impl\WireFormatting.cs" />
@@ -264,7 +273,6 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Configuration" />
-    <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <!-- Mono compatibility workarounds -->
   <PropertyGroup Condition=" '$(PropUsingMono)' == 'true'">

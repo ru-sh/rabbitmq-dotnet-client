@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,13 +34,18 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
 using System.Collections;
 using System.IO;
+
+#if NETFX_CORE || NET4  // For Windows 8 Store, but could be .NET 4.0 and greater
+using System.Threading.Tasks;
+#endif
+
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 
@@ -315,6 +320,35 @@ namespace RabbitMQ.Client.MessagePatterns
             }
             return LatestEvent;
         }
+
+#if NETFX_CORE || NET4
+        public async Task<BasicDeliverEventArgs> NextAsync() {
+            try {
+                // Alias the pointer as otherwise it may change out
+                // from under us by the operation of Close() from
+                // another thread.
+                QueueingBasicConsumer consumer = m_consumer;
+                if (consumer == null) {
+                    // Closed!
+                    MutateLatestEvent(null);
+                }
+                else {
+                    MutateLatestEvent(await consumer.Queue.DequeueAsync());
+                }
+            }
+            catch (AggregateException ex) {
+                // since tasks wrap exceptions as AggregateException, 
+                // reach in and check if the EndOfStream exception is what happened
+                if (ex.InnerException is EndOfStreamException) {
+                    MutateLatestEvent(null);
+                }
+            }
+            catch (EndOfStreamException) {
+                MutateLatestEvent(null);
+            }
+            return LatestEvent;
+        }
+#endif
 
         ///<summary>Retrieves the next incoming delivery in our
         ///subscription queue, or times out after a specified number

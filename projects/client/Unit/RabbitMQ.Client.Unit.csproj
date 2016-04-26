@@ -97,7 +97,9 @@
     <Compile Include="src\unit\TestConnectionRecovery.cs" />
     <Compile Include="src\unit\TestConnectionShutdown.cs" />
     <Compile Include="src\unit\TestConnectionWithBackgroundThreads.cs" />
+    <Compile Include="src\unit\TestInitialConnection.cs" />
     <Compile Include="src\unit\TestConsumerCancelNotify.cs" />
+    <Compile Include="src\unit\TestConsumerCount.cs" />
     <Compile Include="src\unit\TestConsumerExceptions.cs" />
     <Compile Include="src\unit\TestConsumerOperationDispatch.cs" />
     <Compile Include="src\unit\TestContentHeaderCodec.cs" />
@@ -113,6 +115,7 @@
     <Compile Include="src\unit\TestInvalidAck.cs" />
     <Compile Include="src\unit\TestMainLoop.cs" />
     <Compile Include="src\unit\TestMapMessage.cs" />
+    <Compile Include="src\unit\TestMessageCount.cs" />
     <Compile Include="src\unit\TestMessagePatternsSubscription.cs" />
     <Compile Include="src\unit\TestMethodArgumentCodec.cs" />
     <Compile Include="src\unit\TestModelShutdown.cs" />
@@ -121,6 +124,7 @@
     <Compile Include="src\unit\TestPassiveDeclare.cs" />
     <Compile Include="src\unit\TestPropertiesClone.cs" />
     <Compile Include="src\unit\TestPublicationAddress.cs" />
+    <Compile Include="src\unit\TestPublisherConfirms.cs" />
     <Compile Include="src\unit\TestQueueDeclare.cs" />
     <Compile Include="src\unit\TestRecoverAfterCancel.cs" />
     <Compile Include="src\unit\TestSharedQueue.cs" />

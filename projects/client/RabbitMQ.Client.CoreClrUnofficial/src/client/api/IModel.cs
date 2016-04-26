@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using RabbitMQ.Client;
@@ -139,7 +139,7 @@ namespace RabbitMQ.Client
         ///
         /// Examples of cases where this event will be signalled
         /// include exceptions thrown in <see cref="IBasicConsumer"/> methods, or
-        /// exceptions thrown in <see cref="ModelShutdownEventHandler"/> delegates etc.
+        /// exceptions thrown in <see cref="ModelShutdown"/> delegates etc.
         /// </summary>
         event EventHandler<CallbackExceptionEventArgs> CallbackException;
 
@@ -258,7 +258,7 @@ namespace RabbitMQ.Client
         /// (Spec method) Convenience overload of BasicPublish.
         /// </summary>
         /// <remarks>
-        /// The publication occurs with mandatory=false and immediate=false.
+        /// The publication occurs with mandatory=false
         /// </remarks>
         [AmqpMethodDoNotImplement(null)]
         void BasicPublish(string exchange, string routingKey, IBasicProperties basicProperties, byte[] body);
@@ -266,21 +266,9 @@ namespace RabbitMQ.Client
         /// <summary>
         /// (Spec method) Convenience overload of BasicPublish.
         /// </summary>
-        /// <remarks>
-        /// The publication occurs with immediate=false.
-        /// </remarks>
         [AmqpMethodDoNotImplement(null)]
         void BasicPublish(string exchange, string routingKey, bool mandatory,
             IBasicProperties basicProperties, byte[] body);
-
-        /// <summary>(Spec method) Publish a message using the Basic
-        ///content-class.</summary>
-        /// <remarks>
-        ///Note that the RabbitMQ server does not support the 'immediate' flag.
-        /// </remarks>
-        [AmqpMethodDoNotImplement(null)]
-        void BasicPublish(string exchange, string routingKey, bool mandatory,
-            bool immediate, IBasicProperties basicProperties, byte[] body);
 
         /// <summary>
         /// (Spec method) Configures QoS parameters of the Basic content-class.
@@ -485,6 +473,24 @@ namespace RabbitMQ.Client
         QueueDeclareOk QueueDeclarePassive(string queue);
 
         /// <summary>
+        /// Returns the number of messages in a queue ready to be delivered
+        /// to consumers. This method assumes the queue exists. If it doesn't,
+        /// an exception will be closed with an exception.
+        /// </summary>
+        /// <param name="queue">The name of the queue</param>
+        [AmqpMethodDoNotImplement(null)]
+        uint MessageCount(string queue);
+
+        /// <summary>
+        /// Returns the number of consumers on a queue.
+        /// This method assumes the queue exists. If it doesn't,
+        /// an exception will be closed with an exception.
+        /// </summary>
+        /// <param name="queue">The name of the queue</param>
+        [AmqpMethodDoNotImplement(null)]
+        uint ConsumerCount(string queue);
+
+        /// <summary>
         /// (Spec method) Delete a queue.
         /// </summary>
         /// <remarks>
@@ -605,5 +611,11 @@ namespace RabbitMQ.Client
         /// </remarks>
         [AmqpMethodDoNotImplement(null)]
         void WaitForConfirmsOrDie(TimeSpan timeout);
+
+        /// <summary>
+        /// Amount of time protocol  operations (e.g. <code>queue.declare</code>) are allowed to take before
+        /// timing out.
+        /// </summary>
+        TimeSpan ContinuationTimeout { get; set; }
     }
 }

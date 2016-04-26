@@ -89,7 +89,7 @@ UpgradeLog*.htm
 
 # Unit tests
 
-projects/client/Unit/TestResult.xml
+projects/client/Unit*/TestResult.xml
 
 # Development scripts
 
@@ -99,3 +99,4 @@ projects/client/Unit/TestResult.xml
 # Vim
 .sw?
 .*.sw?
+rabbit.snk

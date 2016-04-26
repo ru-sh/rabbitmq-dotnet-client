@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,15 +34,20 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;
+
+#if !NETFX_CORE
 using System.Net.Sockets;
+#else
+using Windows.Networking.Sockets;
+#endif
+
 using RabbitMQ.Client.Impl;
-using RabbitMQ.Client;
 using RabbitMQ.Util;
 
 namespace RabbitMQ.Client.Framing.Impl
@@ -126,23 +131,50 @@ namespace RabbitMQ.Client.Framing.Impl
             bool insist,
             IFrameHandler frameHandler)
         {
-            return new Connection(factory, insist, frameHandler);
+            return new Connection(factory, insist, frameHandler, null);
+        }
+
+
+        public IConnection CreateConnection(IConnectionFactory factory,
+            bool insist,
+            IFrameHandler frameHandler,
+            string clientProvidedName)
+        {
+            return new Connection(factory, insist, frameHandler, clientProvidedName);
         }
 
         public IConnection CreateConnection(ConnectionFactory factory,
             IFrameHandler frameHandler,
             bool automaticRecoveryEnabled)
         {
-            var ac = new AutorecoveringConnection(factory);
-            ac.init();
+            var ac = new AutorecoveringConnection(factory, null);
+            ac.Init();
             return ac;
         }
 
-        public IFrameHandler CreateFrameHandler(AmqpTcpEndpoint endpoint,
-            Func<AddressFamily, TcpClient> socketFactory,
-            int timeout)
+        public IConnection CreateConnection(ConnectionFactory factory,
+            IFrameHandler frameHandler,
+            bool automaticRecoveryEnabled,
+            string clientProvidedName)
         {
-            return new SocketFrameHandler(endpoint, socketFactory, timeout);
+            var ac = new AutorecoveringConnection(factory, clientProvidedName);
+            ac.Init();
+            return ac;
+        }
+
+        public IFrameHandler CreateFrameHandler(
+            AmqpTcpEndpoint endpoint,
+#if !NETFX_CORE
+            Func<AddressFamily, ITcpClient> socketFactory, 
+#else
+            Func<StreamSocket> socketFactory,
+#endif
+            int connectionTimeout,
+            int readTimeout,
+            int writeTimeout)
+        {
+            return new SocketFrameHandler(endpoint, socketFactory,
+                connectionTimeout, readTimeout, writeTimeout);
         }
 
         public IModel CreateModel(ISession session)

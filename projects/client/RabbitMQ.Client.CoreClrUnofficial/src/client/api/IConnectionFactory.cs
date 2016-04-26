@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
@@ -90,7 +90,7 @@ namespace RabbitMQ.Client
         /// Given a list of mechanism names supported by the server, select a preferred mechanism,
         /// or null if we have none in common.
         /// </summary>
-        AuthMechanismFactory AuthMechanismFactory(string[] mechanismNames);
+        AuthMechanismFactory AuthMechanismFactory(IList<string> mechanismNames);
 
         /// <summary>
         /// Create a connection to the specified endpoint.
@@ -98,10 +98,53 @@ namespace RabbitMQ.Client
         IConnection CreateConnection();
 
         /// <summary>
+        /// Create a connection to the specified endpoint.
+        /// </summary>
+        /// <param name="clientProvidedName">        /// Application-specific connection name, will be displayed in the management UI
+        /// if RabbitMQ server supports it. This value doesn't have to be unique and cannot
+        /// be used as a connection identifier, e.g. in HTTP API requests.
+        /// This value is supposed to be human-readable.
+        /// </param>
+        /// <returns></returns>
+        IConnection CreateConnection(String clientProvidedName);
+
+        /// <summary>
+        /// Connects to the first reachable hostname from the list.
+        /// </summary>
+        /// <param name="hostnames">List of host names to use</param>
+        /// <returns></returns>
+        IConnection CreateConnection(IList<string> hostnames);
+
+        /// <summary>
+        /// Connects to the first reachable hostname from the list.
+        /// </summary>
+        /// <param name="hostnames">List of host names to use</param>
+        /// <param name="clientProvidedName">
+        /// Application-specific connection name, will be displayed in the management UI
+        /// if RabbitMQ server supports it. This value doesn't have to be unique and cannot
+        /// be used as a connection identifier, e.g. in HTTP API requests.
+        /// This value is supposed to be human-readable.
+        /// </param>
+        /// <returns></returns>
+        IConnection CreateConnection(IList<string> hostnames, String clientProvidedName);
+
+        /// <summary>
         /// Advanced option.
-        /// 
+        ///
         /// What task scheduler should consumer dispatcher use.
         /// </summary>
         TaskScheduler TaskScheduler { get; set; }
+
+        /// <summary>
+        /// Amount of time protocol handshake operations are allowed to take before
+        /// timing out.
+        /// </summary>
+        TimeSpan HandshakeContinuationTimeout { get; set; }
+
+        /// <summary>
+        /// Amount of time protocol  operations (e.g. <code>queue.declare</code>) are allowed to take before
+        /// timing out.
+        /// </summary>
+        TimeSpan ContinuationTimeout { get; set; }
     }
 }

@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using RabbitMQ.Client.Exceptions;
@@ -60,15 +60,15 @@ namespace RabbitMQ.Client.Impl
         protected int m_writeableStateTimeout = 30000;
 
         public NetworkBinaryReader m_reader;
-        public TcpClient m_socket;
+        public ITcpClient m_socket;
 
         public NetworkBinaryWriter m_writer;
         private readonly object _semaphore = new object();
         private bool _closed;
 
         public SocketFrameHandler(AmqpTcpEndpoint endpoint,
-            Func<AddressFamily, TcpClient> socketFactory,
-            int timeout)
+            Func<AddressFamily, ITcpClient> socketFactory,
+            int connectionTimeout, int readTimeout, int writeTimeout)
         {
             Endpoint = endpoint;
             m_socket = null;
@@ -77,7 +77,7 @@ namespace RabbitMQ.Client.Impl
                 try
                 {
                     m_socket = socketFactory(AddressFamily.InterNetworkV6);
-                    Connect(m_socket, endpoint, timeout).Wait(timeout);
+                    Connect(m_socket, endpoint, connectionTimeout);
                 }
                 catch (ConnectFailureException) // could not connect using IPv6
                 {
@@ -93,13 +93,12 @@ namespace RabbitMQ.Client.Impl
             if (m_socket == null)
             {
                 m_socket = socketFactory(AddressFamily.InterNetwork);
-                Connect(m_socket, endpoint, timeout).Wait(timeout);
+                Connect(m_socket, endpoint, connectionTimeout);
             }
 
             Stream netstream = m_socket.GetStream();
-            // make sure the socket timeout is greater than heartbeat timeout
-            netstream.ReadTimeout = timeout;
-            netstream.WriteTimeout = timeout;
+            netstream.ReadTimeout  = readTimeout;
+            netstream.WriteTimeout = writeTimeout;
 
             if (endpoint.Ssl.Enabled)
             {
@@ -115,6 +114,8 @@ namespace RabbitMQ.Client.Impl
             }
             m_reader = new NetworkBinaryReader((netstream));
             m_writer = new NetworkBinaryWriter((netstream));
+
+            m_writeableStateTimeout = writeTimeout;
         }
 
         public AmqpTcpEndpoint Endpoint { get; set; }
@@ -139,17 +140,15 @@ namespace RabbitMQ.Client.Impl
             get { return ((IPEndPoint)LocalEndPoint).Port; }
         }
 
-        public int Timeout
+        public int ReadTimeout
         {
             set
             {
                 try
                 {
                     if (m_socket.Connected)
-                    {
-                        // make sure the socket timeout is greater than heartbeat interval
-                        m_socket.ReceiveTimeout = value * 4;
-                        m_writeableStateTimeout = value * 4;
+                    {                        
+                        m_socket.ReceiveTimeout = value;
                     }
                 }
 #pragma warning disable 0168
@@ -158,6 +157,15 @@ namespace RabbitMQ.Client.Impl
                     // means that the socket is already closed
                 }
 #pragma warning restore 0168
+            }
+        }
+
+        public int WriteTimeout
+        {
+            set
+            {
+                m_writeableStateTimeout = value;
+                m_socket.Client.SendTimeout = value;
             }
         }
 
@@ -257,7 +265,7 @@ namespace RabbitMQ.Client.Impl
             }
         }
 
-        private async Task Connect(TcpClient socket, AmqpTcpEndpoint endpoint, int timeout)
+        private void Connect(ITcpClient socket, AmqpTcpEndpoint endpoint, int timeout)
         {
             try
             {

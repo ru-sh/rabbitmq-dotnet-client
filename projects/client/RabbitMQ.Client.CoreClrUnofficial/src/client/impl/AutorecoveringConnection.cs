@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using RabbitMQ.Client.Events;
@@ -56,12 +56,18 @@ namespace RabbitMQ.Client.Framing.Impl
         protected Connection m_delegate;
         protected ConnectionFactory m_factory;
 
+        // list of hostnames provided on initial connection.
+        // on re-connection, the next host in the line is chosen using
+        // IHostnameSelector
+        protected IList<string> hostnames;
+
         public readonly object m_recordedEntitiesLock = new object();
         protected readonly TaskFactory recoveryTaskFactory = new TaskFactory();
         protected readonly object recoveryLockTarget = new object();
         // used to block connection recovery attempts after Close() is unvoked
         protected bool manuallyClosed = false;
         protected bool performingRecovery = false;
+
 
         protected List<AutorecoveringModel> m_models = new List<AutorecoveringModel>();
 
@@ -89,9 +95,10 @@ namespace RabbitMQ.Client.Framing.Impl
         private EventHandler<QueueNameChangedAfterRecoveryEventArgs> m_queueNameChange;
         private EventHandler<EventArgs> m_recovery;
 
-        public AutorecoveringConnection(ConnectionFactory factory)
+        public AutorecoveringConnection(ConnectionFactory factory, string clientProvidedName = null)
         {
             m_factory = factory;
+            this.ClientProvidedName = clientProvidedName;
         }
 
         public event EventHandler<CallbackExceptionEventArgs> CallbackException
@@ -226,6 +233,8 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
+        public string ClientProvidedName { get; private set; }
+
         public bool AutoClose
         {
             get { return m_delegate.AutoClose; }
@@ -278,11 +287,6 @@ namespace RabbitMQ.Client.Framing.Impl
             set { m_delegate.KnownHosts = value; }
         }
 
-        public EndPoint LocalEndPoint
-        {
-            get { return m_delegate.LocalEndPoint; }
-        }
-
         public int LocalPort
         {
             get { return m_delegate.LocalPort; }
@@ -301,11 +305,6 @@ namespace RabbitMQ.Client.Framing.Impl
         public IDictionary<string, RecordedQueue> RecordedQueues
         {
             get { return m_recordedQueues; }
-        }
-
-        public EndPoint RemoteEndPoint
-        {
-            get { return m_delegate.RemoteEndPoint; }
         }
 
         public int RemotePort
@@ -343,7 +342,11 @@ namespace RabbitMQ.Client.Framing.Impl
                         {
                             try
                             {
-                                Thread.Sleep(m_factory.NetworkRecoveryInterval);
+#if NETFX_CORE
+                            System.Threading.Tasks.Task.Delay(m_factory.NetworkRecoveryInterval).Wait();
+#else
+                            Thread.Sleep(m_factory.NetworkRecoveryInterval);
+#endif
                                 self.PerformAutomaticRecovery();
                             }
                             finally
@@ -544,9 +547,40 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
-        public void init()
+        public void Init()
         {
-            m_delegate = new Connection(m_factory, false, m_factory.CreateFrameHandler());
+            this.Init(m_factory.HostName);
+        }
+
+        public void Init(IList<string> hostnames)
+        {
+            this.hostnames = hostnames;
+            string reachableHostname = null;
+            IFrameHandler fh = null;
+            Exception e = null;
+            foreach (var h in hostnames)
+            {
+                try
+                {
+                    fh = m_factory.CreateFrameHandler(m_factory.Endpoint.CloneWithHostname(h));
+                    reachableHostname = h;
+                } catch (Exception caught)
+                {
+                    e = caught;
+                }
+            }
+            if (reachableHostname == null)
+            {
+                throw e;
+            }
+            this.Init(reachableHostname);
+        }
+
+        protected void Init(string hostname)
+        {
+            m_delegate = new Connection(m_factory, false,
+                m_factory.CreateFrameHandlerForHostname(hostname),
+                this.ClientProvidedName);
 
             AutorecoveringConnection self = this;
             EventHandler<ShutdownEventArgs> recoveryListener = (_, args) =>
@@ -562,7 +596,12 @@ namespace RabbitMQ.Client.Framing.Impl
                         catch (Exception e)
                         {
                             // TODO: logging
-                            Console.WriteLine("BeginAutomaticRecovery() failed: {0}", e);
+#if NETFX_CORE
+                            System.Diagnostics.Debug.WriteLine(
+#else
+                            Console.WriteLine(
+#endif
+"BeginAutomaticRecovery() failed: {0}", e);
                         }
                     }
                 }
@@ -686,7 +725,12 @@ namespace RabbitMQ.Client.Framing.Impl
         protected void HandleTopologyRecoveryException(TopologyRecoveryException e)
         {
             // TODO
-            Console.WriteLine("Topology recovery exception: {0}", e);
+#if NETFX_CORE
+            System.Diagnostics.Debug.WriteLine(
+#else
+            Console.WriteLine(
+#endif
+                "Topology recovery exception: {0}", e);
         }
 
         protected void PropagateQueueNameChangeToBindings(string oldName, string newName)
@@ -751,14 +795,19 @@ namespace RabbitMQ.Client.Framing.Impl
             {
                 try
                 {
-                    m_delegate = new Connection(m_factory, false, m_factory.CreateFrameHandler());
+                    var nextHostname = m_factory.HostnameSelector.NextFrom(this.hostnames);
+                    var fh = m_factory.CreateFrameHandler(m_factory.Endpoint.CloneWithHostname(nextHostname));
+                    m_delegate = new Connection(m_factory, false, fh, this.ClientProvidedName);
                     recovering = false;
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    // TODO: exponential back-off
+#if NETFX_CORE
+                    System.Threading.Tasks.Task.Delay(m_factory.NetworkRecoveryInterval).Wait();
+#else
                     Thread.Sleep(m_factory.NetworkRecoveryInterval);
-                    // TODO: provide a way to handle these exceptions
+#endif
+                    // TODO: provide a way to handle these exceptions                  
                 }
             }
         }

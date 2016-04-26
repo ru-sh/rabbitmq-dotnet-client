@@ -1,4 +1,4 @@
-## RabbitMQ .NET Client
+## RabbitMQ .NET Client [![Build status](https://ci.appveyor.com/api/projects/status/33srpo7owl1h3y4e?svg=true)](https://ci.appveyor.com/project/rabbitmq/rabbitmq-dotnet-client)
 
 This repository contains source code of the [RabbitMQ .NET client](http://www.rabbitmq.com/dotnet.html).
 The client is maintained by the [RabbitMQ team at Pivotal](http://github.com/rabbitmq/).
@@ -20,7 +20,7 @@ There are two ways to consume the client:
 
 ## Supported Platforms and .NET Releases
 
-The client requires .NET 4.0 or later. It supports Linux and OS X on [Mono](http://www.mono-project.com/).
+The client requires .NET 4.5 or later. It supports Linux and OS X on [Mono](http://www.mono-project.com/).
 
 
 ## Contributing

@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,12 +34,18 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
+
+#if !NETFX_CORE
 using System.Net.Sockets;
+#else
+using Windows.Networking.Sockets;
+#endif
+
 using RabbitMQ.Client.Impl;
 
 namespace RabbitMQ.Client
@@ -90,13 +96,34 @@ namespace RabbitMQ.Client
         IConnection CreateConnection(ConnectionFactory factory, IFrameHandler frameHandler, bool automaticRecoveryEnabled);
 
         /// <summary>
+        /// Construct a connection from a given set of parameters,
+        /// a frame handler, a client-provided name, and no automatic recovery.
+        /// The "insist" parameter is passed on to the AMQP connection.open method.
+        /// </summary>
+        IConnection CreateConnection(IConnectionFactory factory, bool insist, IFrameHandler frameHandler, String clientProvidedName);
+
+        /// <summary>
+        /// Construct a connection from a given set of parameters,
+        /// a frame handler, a client-provided name, and automatic recovery settings.
+        /// </summary>
+        IConnection CreateConnection(ConnectionFactory factory, IFrameHandler frameHandler, bool automaticRecoveryEnabled, String clientProvidedName);
+
+        /// <summary>
         ///  Construct a frame handler for a given endpoint.
         ///  </summary>
         /// <param name="socketFactory">Socket factory method.</param>
-        /// <param name="timeout">Timeout in milliseconds.</param>
+        /// <param name="connectionTimeout">Timeout in milliseconds.</param>
         /// <param name="endpoint">Represents a TCP-addressable AMQP peer: a host name and port number.</param>
-        IFrameHandler CreateFrameHandler(AmqpTcpEndpoint endpoint, Func<AddressFamily, TcpClient> socketFactory, int timeout);
-
+        IFrameHandler CreateFrameHandler(
+            AmqpTcpEndpoint endpoint, 
+#if !NETFX_CORE
+            Func<AddressFamily, ITcpClient> socketFactory, 
+#else
+            Func<StreamSocket> socketFactory,
+#endif
+            int connectionTimeout,
+            int readTimeout,
+            int writeTimeout);
         /// <summary>
         /// Construct a protocol model atop a given session.
         /// </summary>

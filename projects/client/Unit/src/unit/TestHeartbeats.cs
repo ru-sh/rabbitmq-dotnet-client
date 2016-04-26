@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using NUnit.Framework;
@@ -44,6 +44,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
+#if !NETFX_CORE
 namespace RabbitMQ.Client.Unit
 {
     [TestFixture]
@@ -51,15 +52,9 @@ namespace RabbitMQ.Client.Unit
     {
         private const UInt16 heartbeatTimeout = 2;
 
-        [Test]
+        [Test, Category("LongRunning"), Timeout(35000)]
         public void TestThatHeartbeatWriterUsesConfigurableInterval()
         {
-            if (!LongRunningTestsEnabled())
-            {
-                Console.WriteLine("RABBITMQ_LONG_RUNNING_TESTS is not set, skipping test");
-                return;
-            }
-
             var cf = new ConnectionFactory()
             {
                 RequestedHeartbeat = heartbeatTimeout,
@@ -100,15 +95,9 @@ namespace RabbitMQ.Client.Unit
             RunSingleConnectionTest(cf);
         }
 
-        [Test]
+        [Test, Category("LongRunning"), Timeout(65000)]
         public void TestHundredsOfConnectionsWithRandomHeartbeatInterval()
         {
-            if (!LongRunningTestsEnabled())
-            {
-                Console.WriteLine("RABBITMQ_LONG_RUNNING_TESTS is not set, skipping test");
-                return;
-            }
-
             var rnd = new Random();
             List<IConnection> xs = new List<IConnection>();
             for (var i = 0; i < 200; i++)
@@ -188,3 +177,4 @@ namespace RabbitMQ.Client.Unit
         }
     }
 }
+#endif

@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using RabbitMQ.Client.Exceptions;
@@ -43,7 +43,14 @@ using RabbitMQ.Client.Framing;
 using RabbitMQ.Util;
 using System;
 using System.IO;
+
+#if NETFX_CORE
+using Windows.Networking.Sockets;
+#else
+
 using System.Net.Sockets;
+
+#endif
 
 namespace RabbitMQ.Client.Impl
 {
@@ -121,6 +128,15 @@ namespace RabbitMQ.Client.Impl
             }
             catch (IOException ioe)
             {
+#if NETFX_CORE
+                if (ioe.InnerException != null
+                    && SocketError.GetStatus(ioe.InnerException.HResult) == SocketErrorStatus.ConnectionTimedOut)
+                {
+                    throw ioe.InnerException;
+                }
+
+                throw;
+#else
                 // If it's a WSAETIMEDOUT SocketException, unwrap it.
                 // This might happen when the limit of half-open connections is
                 // reached.
@@ -131,6 +147,7 @@ namespace RabbitMQ.Client.Impl
                     throw ioe;
                 }
                 throw ioe.InnerException;
+#endif
             }
 
             if (type == 'A')

@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using RabbitMQ.Client.Events;
@@ -45,8 +45,18 @@ using RabbitMQ.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
+
+#if NETFX_CORE
+
+using System.Threading.Tasks;
+using Windows.Networking.Sockets;
+using Windows.ApplicationModel;
+
+#else
 using System.Net;
 using System.Net.Sockets;
+#endif
+
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -59,10 +69,6 @@ namespace RabbitMQ.Client.Framing.Impl
 
         ///<summary>Heartbeat frame for transmission. Reusable across connections.</summary>
         public readonly Frame m_heartbeatFrame = new Frame(Constants.FrameHeartbeat, 0, new byte[0]);
-
-        ///<summary>Timeout used while waiting for AMQP handshaking to
-        ///complete (milliseconds)</summary>
-        public const int HandshakeTimeout = 10000;
 
         public ManualResetEvent m_appContinuation = new ManualResetEvent(false);
         public EventHandler<CallbackExceptionEventArgs> m_callbackException;
@@ -107,8 +113,9 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public ConsumerWorkService ConsumerWorkService { get; private set; }
 
-        public Connection(IConnectionFactory factory, bool insist, IFrameHandler frameHandler)
+        public Connection(IConnectionFactory factory, bool insist, IFrameHandler frameHandler, string clientProvidedName = null)
         {
+            clientProvidedName = clientProvidedName;
             KnownHosts = null;
             FrameMax = 0;
             m_factory = factory;
@@ -122,7 +129,20 @@ namespace RabbitMQ.Client.Framing.Impl
             StartMainLoop(factory.UseBackgroundThreadsForIO);
             Open(insist);
 
-            //AppDomain.CurrentDomain.DomainUnload += HandleDomainUnload;
+#if NETFX_CORE
+#pragma warning disable 0168
+            try
+            {
+                Windows.UI.Xaml.Application.Current.Suspending += this.HandleApplicationSuspend;
+            }
+            catch (Exception ex)
+            {
+                // If called from a desktop app (i.e. unit tests), then there is no current application
+            }
+#pragma warning restore 0168
+#else
+            AppDomain.CurrentDomain.DomainUnload += HandleDomainUnload;
+#endif
         }
 
         public event EventHandler<CallbackExceptionEventArgs> CallbackException
@@ -206,6 +226,8 @@ namespace RabbitMQ.Client.Framing.Impl
             }
         }
 
+        public string ClientProvidedName { get; private set; }
+
         public bool AutoClose
         {
             get { return m_sessionManager.AutoClose; }
@@ -244,7 +266,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 // timers fire at slightly below half the interval to avoid race
                 // conditions
                 m_heartbeatTimeSpan = TimeSpan.FromMilliseconds((value * 1000) / 4);
-                m_frameHandler.Timeout = value * 1000 * 2;
+                m_frameHandler.ReadTimeout = value * 1000 * 2;
             }
         }
 
@@ -255,10 +277,12 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public AmqpTcpEndpoint[] KnownHosts { get; set; }
 
+#if !NETFX_CORE
         public EndPoint LocalEndPoint
         {
             get { return m_frameHandler.LocalEndPoint; }
         }
+#endif
 
         public int LocalPort
         {
@@ -272,10 +296,12 @@ namespace RabbitMQ.Client.Framing.Impl
             get { return (ProtocolBase)Endpoint.Protocol; }
         }
 
+#if !NETFX_CORE
         public EndPoint RemoteEndPoint
         {
             get { return m_frameHandler.RemoteEndPoint; }
         }
+#endif
 
         public int RemotePort
         {
@@ -297,13 +323,20 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public static IDictionary<string, object> DefaultClientProperties()
         {
-            string version = new Version(3,5,6).ToString();
+            Assembly assembly =
+#if NETFX_CORE
+ System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(Connection)).Assembly;
+#else
+                System.Reflection.Assembly.GetAssembly(typeof(Connection));
+#endif
+
+            string version = assembly.GetName().Version.ToString();
             //TODO: Get the rest of this data from the Assembly Attributes
             IDictionary<string, object> table = new Dictionary<string, object>();
             table["product"] = Encoding.UTF8.GetBytes("RabbitMQ");
             table["version"] = Encoding.UTF8.GetBytes(version);
             table["platform"] = Encoding.UTF8.GetBytes(".NET");
-            table["copyright"] = Encoding.UTF8.GetBytes("Copyright (C) 2007-2015 Pivotal Software, Inc.");
+            table["copyright"] = Encoding.UTF8.GetBytes("Copyright (c) 2007-2016 Pivotal Software, Inc.");
             table["information"] = Encoding.UTF8.GetBytes("Licensed under the MPL.  " +
                                                           "See http://www.rabbitmq.com/");
             return table;
@@ -391,7 +424,14 @@ namespace RabbitMQ.Client.Framing.Impl
                     TerminateMainloop();
                 }
             }
-            if (!m_appContinuation.WaitOne(BlockingCell.validatedTimeout(timeout)))
+
+#if NETFX_CORE
+            var receivedSignal = m_appContinuation.WaitOne(BlockingCell.validatedTimeout(timeout));
+#else
+            var receivedSignal = m_appContinuation.WaitOne(BlockingCell.validatedTimeout(timeout), true);
+#endif
+
+            if (!receivedSignal)
             {
                 m_frameHandler.Close();
             }
@@ -404,7 +444,7 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             try
             {
-                m_frameHandler.Timeout = 0;
+                m_frameHandler.ReadTimeout = 0;
                 // Wait for response/socket closure or timeout
                 while (!m_closed)
                 {
@@ -481,6 +521,17 @@ namespace RabbitMQ.Client.Framing.Impl
             m_model0.FinishClose();
         }
 
+#if NETFX_CORE
+
+        /// <remarks>
+        /// We need to close the socket, otherwise suspending the application will take the maximum time allowed
+        /// </remarks>
+        public void HandleApplicationSuspend(object sender, SuspendingEventArgs suspendingEventArgs)
+        {
+            Abort(Constants.InternalError, "Application Suspend");
+        }
+
+#else
         /// <remarks>
         /// We need to close the socket, otherwise attempting to unload the domain
         /// could cause a CannotUnloadAppDomainException
@@ -489,6 +540,7 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             Abort(Constants.InternalError, "Domain Unload");
         }
+#endif
 
         public void HandleMainLoopException(ShutdownEventArgs reason)
         {
@@ -584,6 +636,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 {
                     shutdownCleanly = HardProtocolExceptionHandler(hpe);
                 }
+#if !NETFX_CORE
                 catch (Exception ex)
                 {
                     HandleMainLoopException(new ShutdownEventArgs(ShutdownInitiator.Library,
@@ -591,22 +644,39 @@ namespace RabbitMQ.Client.Framing.Impl
                         "Unexpected Exception",
                         ex));
                 }
+#endif
 
                 // If allowed for clean shutdown, run main loop until the
                 // connection closes.
                 if (shutdownCleanly)
                 {
+#pragma warning disable 0168
                     try
                     {
                         ClosingLoop();
-#pragma warning disable 0168
                     }
+#if NETFX_CORE
+                    catch (Exception ex)
+                    {
+                        if (SocketError.GetStatus(ex.HResult) != SocketErrorStatus.Unknown)
+                        {
+                            // means that socket was closed when frame handler
+                            // attempted to use it. Since we are shutting down,
+                            // ignore it.
+                        }
+                        else
+                        {
+                            throw ex;
+                        }
+                    }
+#else
                     catch (SocketException se)
                     {
                         // means that socket was closed when frame handler
                         // attempted to use it. Since we are shutting down,
                         // ignore it.
                     }
+#endif
 #pragma warning restore 0168
                 }
 
@@ -794,7 +864,20 @@ namespace RabbitMQ.Client.Framing.Impl
                     }
                 }
             }
-            //AppDomain.CurrentDomain.DomainUnload -= HandleDomainUnload;
+#if NETFX_CORE
+#pragma warning disable 0168
+            try
+            {
+                Windows.UI.Xaml.Application.Current.Suspending -= this.HandleApplicationSuspend;
+            }
+            catch (Exception ex)
+            {
+                // If called from a desktop app (i.e. unit tests), then there is no current application
+            }
+#pragma warning restore 0168
+#else
+            AppDomain.CurrentDomain.DomainUnload -= HandleDomainUnload;
+#endif
         }
 
         public void Open(bool insist)
@@ -807,14 +890,29 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             if (ShutdownReport.Count == 0)
             {
-                Console.Error.WriteLine("No errors reported when closing connection {0}", this);
+#if NETFX_CORE
+                System.Diagnostics.Debug.WriteLine(
+#else
+                Console.Error.WriteLine(
+#endif
+"No errors reported when closing connection {0}", this);
             }
             else
             {
-                Console.Error.WriteLine("Log of errors while closing connection {0}:", this);
+#if NETFX_CORE
+                System.Diagnostics.Debug.WriteLine(
+#else
+                Console.Error.WriteLine(
+#endif
+"Log of errors while closing connection {0}:", this);
                 foreach (ShutdownReportEntry entry in ShutdownReport)
                 {
-                    Console.Error.WriteLine(entry.ToString());
+#if NETFX_CORE
+                    System.Diagnostics.Debug.WriteLine(
+#else
+                    Console.Error.WriteLine(
+#endif
+entry.ToString());
                 }
             }
         }
@@ -897,17 +995,30 @@ namespace RabbitMQ.Client.Framing.Impl
         {
             if (Heartbeat != 0)
             {
-                _heartbeatWriteTimer = new Timer(HeartbeatWriteTimerCallback, null, TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
-                _heartbeatReadTimer = new Timer(HeartbeatReadTimerCallback, null, TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
+                _heartbeatWriteTimer = new Timer(HeartbeatWriteTimerCallback);
+                _heartbeatReadTimer = new Timer(HeartbeatReadTimerCallback);
+#if NETFX_CORE
+                _heartbeatWriteTimer.Change(200, m_heartbeatTimeSpan.Milliseconds);
+                _heartbeatReadTimer.Change(200, m_heartbeatTimeSpan.Milliseconds);
+#else
+                _heartbeatWriteTimer.Change(TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
+                _heartbeatReadTimer.Change(TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
+#endif
             }
         }
 
         public void StartMainLoop(bool useBackgroundThread)
         {
+            var taskName = "AMQP Connection " + Endpoint;
+
+#if NETFX_CORE
+            Task.Factory.StartNew(this.MainLoop, TaskCreationOptions.LongRunning);
+#else
             var mainLoopThread = new Thread(MainLoop);
-            mainLoopThread.Name = "AMQP Connection " + Endpoint;
+            mainLoopThread.Name = taskName;
             mainLoopThread.IsBackground = useBackgroundThread;
             mainLoopThread.Start();
+#endif
         }
 
         public void HeartbeatReadTimerCallback(object state)
@@ -1092,6 +1203,7 @@ namespace RabbitMQ.Client.Framing.Impl
             EnsureIsOpen();
             ISession session = CreateSession();
             var model = (IFullModel)Protocol.CreateModel(session, this.ConsumerWorkService);
+            model.ContinuationTimeout = m_factory.ContinuationTimeout;
             model._Private_ChannelOpen("");
             return model;
         }
@@ -1110,17 +1222,13 @@ namespace RabbitMQ.Client.Framing.Impl
         void IDisposable.Dispose()
         {
             MaybeStopHeartbeatTimers();
-            Abort();
-            if (ShutdownReport.Count > 0)
+            try
             {
-                foreach (ShutdownReportEntry entry in ShutdownReport)
-                {
-                    if (entry.Exception != null)
-                    {
-                        throw entry.Exception;
-                    }
-                }
-                throw new OperationInterruptedException(null);
+                Abort();
+            }
+            catch (OperationInterruptedException ignored)
+            {
+                // ignored, see rabbitmq/rabbitmq-dotnet-client#133
             }
         }
 
@@ -1141,7 +1249,8 @@ namespace RabbitMQ.Client.Framing.Impl
             m_inConnectionNegotiation = true;
             var connectionStartCell = new BlockingCell();
             m_model0.m_connectionStartCell = connectionStartCell;
-            m_frameHandler.Timeout = HandshakeTimeout;
+            m_model0.HandshakeContinuationTimeout = m_factory.HandshakeContinuationTimeout;
+            m_frameHandler.ReadTimeout = m_factory.HandshakeContinuationTimeout.Milliseconds;
             m_frameHandler.SendHeader();
 
             var connectionStart = (ConnectionStartDetails)
@@ -1168,13 +1277,14 @@ namespace RabbitMQ.Client.Framing.Impl
 
             m_clientProperties = new Dictionary<string, object>(m_factory.ClientProperties);
             m_clientProperties["capabilities"] = Protocol.Capabilities;
+            m_clientProperties["connection_name"] = this.ClientProvidedName;
 
             // FIXME: parse out locales properly!
             ConnectionTuneDetails connectionTune = default(ConnectionTuneDetails);
             bool tuned = false;
             try
             {
-                string mechanismsString = Encoding.UTF8.GetString(connectionStart.m_mechanisms, 0 , connectionStart.m_mechanisms.Length);
+                string mechanismsString = Encoding.UTF8.GetString(connectionStart.m_mechanisms, 0, connectionStart.m_mechanisms.Length);
                 string[] mechanisms = mechanismsString.Split(' ');
                 AuthMechanismFactory mechanismFactory = m_factory.AuthMechanismFactory(mechanisms);
                 if (mechanismFactory == null)

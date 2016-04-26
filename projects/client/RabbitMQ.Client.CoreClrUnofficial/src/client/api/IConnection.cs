@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
@@ -151,6 +151,14 @@ namespace RabbitMQ.Client
         /// about any errors reported while closing the connection in the order they appeared
         /// </summary>
         IList<ShutdownReportEntry> ShutdownReport { get; }
+
+        /// <summary>
+        /// Application-specific connection name, will be displayed in the management UI
+        /// if RabbitMQ server supports it. This value doesn't have to be unique and cannot
+        /// be used as a connection identifier, e.g. in HTTP API requests.
+        /// This value is supposed to be human-readable.
+        /// </summary>
+        string ClientProvidedName { get; }
 
         /// <summary>
         /// Signalled when an exception occurs in a callback invoked by the connection.

@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,13 +34,18 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;
 using System.Threading;
+
+#if NETFX_CORE
+using System.Threading.Tasks;
+#endif
+
 using RabbitMQ.Client.Exceptions;
 using RabbitMQ.Client.Framing.Impl;
 using RabbitMQ.Util;
@@ -111,7 +116,11 @@ namespace RabbitMQ.Client.Impl
                         // deadlock as the connection thread would be
                         // blocking waiting for its own mainloop to
                         // reply to it.
+#if NETFX_CORE
+                        Task.Factory.StartNew(AutoCloseConnection, TaskCreationOptions.LongRunning);
+#else
                         new Thread(AutoCloseConnection).Start();
+#endif
                     }
                 }
             }

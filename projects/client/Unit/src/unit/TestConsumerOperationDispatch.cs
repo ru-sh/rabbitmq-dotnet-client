@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using NUnit.Framework;
@@ -57,17 +57,16 @@ namespace RabbitMQ.Client.Unit
         private List<CollectingConsumer> consumers = new List<CollectingConsumer>();
 
         // number of channels (and consumers)
-        private const int y = 200;
+        private const int y = 100;
 
         // number of messages to be published
-        private const int n = 250;
+        private const int n = 100;
 
         public static CountdownEvent counter = new CountdownEvent(y);
 
         [TearDown]
         protected override void ReleaseResources()
         {
-            base.ReleaseResources();
             foreach (var ch in channels)
             {
                 if (ch.IsOpen)
@@ -78,6 +77,7 @@ namespace RabbitMQ.Client.Unit
             queues.Clear();
             consumers.Clear();
             counter.Reset();
+            base.ReleaseResources();
         }
 
         private class CollectingConsumer : DefaultBasicConsumer
@@ -180,15 +180,22 @@ namespace RabbitMQ.Client.Unit
         private class ShutdownLatchConsumer : DefaultBasicConsumer
         {
             public ManualResetEvent Latch { get; private set; }
+            public ManualResetEvent DuplicateLatch { get; private set; }
 
-            public ShutdownLatchConsumer(ManualResetEvent latch)
+            public ShutdownLatchConsumer(ManualResetEvent latch, ManualResetEvent duplicateLatch)
             {
                 this.Latch = latch;
+                this.DuplicateLatch = duplicateLatch;
             }
 
             public override void HandleModelShutdown(object model, ShutdownEventArgs reason)
             {
-                this.Latch.Set();
+                // keep track of duplicates
+                if (this.Latch.WaitOne(0)){
+                    this.DuplicateLatch.Set();
+                } else {
+                    this.Latch.Set();
+                }
             }
         }
 
@@ -196,12 +203,15 @@ namespace RabbitMQ.Client.Unit
         public void TestModelShutdownHandler()
         {
             var latch = new ManualResetEvent(false);
+            var duplicateLatch = new ManualResetEvent(false);
             var q = this.Model.QueueDeclare().QueueName;
-            var c = new ShutdownLatchConsumer(latch);
+            var c = new ShutdownLatchConsumer(latch, duplicateLatch);
 
             this.Model.BasicConsume(queue: q, noAck: true, consumer: c);
             this.Model.Close();
             Wait(latch, TimeSpan.FromSeconds(5));
+            Assert.IsFalse(duplicateLatch.WaitOne(TimeSpan.FromSeconds(5)),
+                           "event handler fired more than once");
         }
     }
 }

@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using NUnit.Framework;
@@ -54,8 +54,6 @@ namespace RabbitMQ.Client.Unit
     [TestFixture]
     public class TestConnectionRecovery : IntegrationFixture
     {
-        public static TimeSpan RECOVERY_INTERVAL = TimeSpan.FromSeconds(2);
-
         [SetUp]
         public override void Init()
         {
@@ -94,6 +92,26 @@ namespace RabbitMQ.Client.Unit
             Assert.IsTrue(Conn.IsOpen);
             CloseAndWaitForRecovery();
             Assert.IsTrue(Conn.IsOpen);
+        }
+
+        [Test]
+        public void TestBasicConnectionRecoveryWithHostnameList()
+        {
+            var c = CreateAutorecoveringConnection(new List<string>() { "127.0.0.1", "localhost" });
+            Assert.IsTrue(c.IsOpen);
+            CloseAndWaitForRecovery(c);
+            Assert.IsTrue(c.IsOpen);
+            c.Close();
+        }
+
+        [Test]
+        public void TestBasicConnectionRecoveryWithHostnameListAndUnreachableHosts()
+        {
+            var c = CreateAutorecoveringConnection(new List<string>() { "191.72.44.22", "127.0.0.1", "localhost" });
+            Assert.IsTrue(c.IsOpen);
+            CloseAndWaitForRecovery(c);
+            Assert.IsTrue(c.IsOpen);
+            c.Close();
         }
 
         [Test]
@@ -844,34 +862,6 @@ namespace RabbitMQ.Client.Unit
             ManualResetEvent sl = PrepareForShutdown(conn);
             CloseConnection(conn);
             Wait(sl);
-        }
-
-        protected AutorecoveringConnection CreateAutorecoveringConnection()
-        {
-            return CreateAutorecoveringConnection(RECOVERY_INTERVAL);
-        }
-
-        protected AutorecoveringConnection CreateAutorecoveringConnection(TimeSpan interval)
-        {
-            var cf = new ConnectionFactory();
-            cf.AutomaticRecoveryEnabled = true;
-            cf.NetworkRecoveryInterval = interval;
-            return (AutorecoveringConnection)cf.CreateConnection();
-        }
-
-        protected AutorecoveringConnection CreateAutorecoveringConnectionWithTopologyRecoveryDisabled()
-        {
-            var cf = new ConnectionFactory();
-            cf.AutomaticRecoveryEnabled = true;
-            cf.TopologyRecoveryEnabled = false;
-            cf.NetworkRecoveryInterval = RECOVERY_INTERVAL;
-            return (AutorecoveringConnection)cf.CreateConnection();
-        }
-
-        protected IConnection CreateNonRecoveringConnection()
-        {
-            var cf = new ConnectionFactory();
-            return cf.CreateConnection();
         }
 
         protected ManualResetEvent PrepareForRecovery(AutorecoveringConnection conn)

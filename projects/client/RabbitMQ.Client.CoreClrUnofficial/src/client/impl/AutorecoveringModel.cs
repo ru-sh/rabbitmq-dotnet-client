@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,14 +34,14 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Framing.Impl;
+using System;
+using System.Collections.Generic;
 
 namespace RabbitMQ.Client.Impl
 {
@@ -71,9 +71,16 @@ namespace RabbitMQ.Client.Impl
         protected bool usesPublisherConfirms = false;
         protected bool usesTransactions = false;
         private EventHandler<EventArgs> m_recovery;
+
         public IConsumerDispatcher ConsumerDispatcher
         {
             get { return m_delegate.ConsumerDispatcher; }
+        }
+
+        public TimeSpan ContinuationTimeout
+        {
+            get { return m_delegate.ContinuationTimeout; }
+            set { m_delegate.ContinuationTimeout = value; }
         }
 
         public AutorecoveringModel(AutorecoveringConnection conn, RecoveryAwareModel _delegate)
@@ -557,12 +564,11 @@ namespace RabbitMQ.Client.Impl
         public void _Private_BasicPublish(string exchange,
             string routingKey,
             bool mandatory,
-            bool immediate,
             IBasicProperties basicProperties,
             byte[] body)
         {
             m_delegate._Private_BasicPublish(exchange, routingKey, mandatory,
-                immediate, basicProperties, body);
+                basicProperties, body);
         }
 
         public void _Private_BasicRecover(bool requeue)
@@ -843,17 +849,6 @@ namespace RabbitMQ.Client.Impl
                 body);
         }
 
-        public void BasicPublish(string exchange,
-            string routingKey,
-            bool mandatory,
-            bool immediate,
-            IBasicProperties basicProperties,
-            byte[] body)
-        {
-            m_delegate.BasicPublish(exchange, routingKey, mandatory, immediate,
-                basicProperties, body);
-        }
-
         public void BasicQos(uint prefetchSize,
             ushort prefetchCount,
             bool global)
@@ -1108,6 +1103,16 @@ namespace RabbitMQ.Client.Impl
         public QueueDeclareOk QueueDeclarePassive(string queue)
         {
             return m_delegate.QueueDeclarePassive(queue);
+        }
+
+        public uint MessageCount(string queue)
+        {
+            return m_delegate.MessageCount(queue);
+        }
+
+        public uint ConsumerCount(string queue)
+        {
+            return m_delegate.ConsumerCount(queue);
         }
 
         public uint QueueDelete(string queue,

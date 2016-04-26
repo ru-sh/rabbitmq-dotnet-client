@@ -4,7 +4,7 @@
 // The APL v2.0:
 //
 //---------------------------------------------------------------------------
-//   Copyright (C) 2007-2015 Pivotal Software, Inc.
+//   Copyright (c) 2007-2016 Pivotal Software, Inc.
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 //
 //  The Original Code is RabbitMQ.
 //
-//  The Initial Developer of the Original Code is GoPivotal, Inc.
-//  Copyright (c) 2007-2015 Pivotal Software, Inc.  All rights reserved.
+//  The Initial Developer of the Original Code is Pivotal Software, Inc.
+//  Copyright (c) 2007-2016 Pivotal Software, Inc.  All rights reserved.
 //---------------------------------------------------------------------------
 
 using System;
@@ -53,23 +53,31 @@ namespace RabbitMQ.Client.Impl
         public string Destination { get; set; }
         public string RoutingKey { get; protected set; }
         public string Source { get; protected set; }
-
+		
         public bool Equals(RecordedBinding other)
         {
-            if (ReferenceEquals(other, null))
+            return other != null && 
+                (Source.Equals(other.Source)) &&
+                (Destination.Equals(other.Destination)) &&
+                (RoutingKey.Equals(other.RoutingKey)) &&
+                (Arguments == other.Arguments);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(obj, null))
             {
                 return false;
             }
 
-            if (ReferenceEquals(this, other))
+            if (ReferenceEquals(this, obj))
             {
                 return true;
             }
 
-            return (Source.Equals(other.Source)) &&
-                   (Destination.Equals(other.Destination)) &&
-                   (RoutingKey.Equals(other.RoutingKey)) &&
-                   (Arguments == other.Arguments);
+			var other = obj as RecordedBinding;
+			
+			return Equals(other);
         }
 
         public override int GetHashCode()
