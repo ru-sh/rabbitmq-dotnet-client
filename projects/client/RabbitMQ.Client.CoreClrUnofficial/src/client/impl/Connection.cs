@@ -140,7 +140,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 // If called from a desktop app (i.e. unit tests), then there is no current application
             }
 #pragma warning restore 0168
-#else
+#elif !CORECLR
             AppDomain.CurrentDomain.DomainUnload += HandleDomainUnload;
 #endif
         }
@@ -324,7 +324,7 @@ namespace RabbitMQ.Client.Framing.Impl
         public static IDictionary<string, object> DefaultClientProperties()
         {
             Assembly assembly =
-#if NETFX_CORE
+#if NETFX_CORE || CORECLR
  System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(Connection)).Assembly;
 #else
                 System.Reflection.Assembly.GetAssembly(typeof(Connection));
@@ -425,7 +425,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 }
             }
 
-#if NETFX_CORE
+#if NETFX_CORE || CORECLR
             var receivedSignal = m_appContinuation.WaitOne(BlockingCell.validatedTimeout(timeout));
 #else
             var receivedSignal = m_appContinuation.WaitOne(BlockingCell.validatedTimeout(timeout), true);
@@ -875,7 +875,7 @@ namespace RabbitMQ.Client.Framing.Impl
                 // If called from a desktop app (i.e. unit tests), then there is no current application
             }
 #pragma warning restore 0168
-#else
+#elif !CORECLR
             AppDomain.CurrentDomain.DomainUnload -= HandleDomainUnload;
 #endif
         }
@@ -995,15 +995,24 @@ entry.ToString());
         {
             if (Heartbeat != 0)
             {
+                var dueTime = TimeSpan.FromMilliseconds(200);
+#if CORECLR
+                _heartbeatWriteTimer = new Timer(HeartbeatWriteTimerCallback, null, dueTime, m_heartbeatTimeSpan);
+                _heartbeatReadTimer = new Timer(HeartbeatReadTimerCallback, null, dueTime, m_heartbeatTimeSpan);
+#else
                 _heartbeatWriteTimer = new Timer(HeartbeatWriteTimerCallback);
                 _heartbeatReadTimer = new Timer(HeartbeatReadTimerCallback);
+
 #if NETFX_CORE
                 _heartbeatWriteTimer.Change(200, m_heartbeatTimeSpan.Milliseconds);
                 _heartbeatReadTimer.Change(200, m_heartbeatTimeSpan.Milliseconds);
 #else
-                _heartbeatWriteTimer.Change(TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
-                _heartbeatReadTimer.Change(TimeSpan.FromMilliseconds(200), m_heartbeatTimeSpan);
+                _heartbeatWriteTimer.Change(dueTime, m_heartbeatTimeSpan);
+                _heartbeatReadTimer.Change(dueTime, m_heartbeatTimeSpan);
 #endif
+
+#endif
+
             }
         }
 
@@ -1061,7 +1070,8 @@ entry.ToString());
                 {
                     _heartbeatReadTimer.Change(Heartbeat * 1000, Timeout.Infinite);
                 }
-            } catch (ObjectDisposedException ignored)
+            }
+            catch (ObjectDisposedException ignored)
             {
                 // timer is already disposed,
                 // e.g. due to shutdown
@@ -1096,7 +1106,8 @@ entry.ToString());
                     TerminateMainloop();
                     FinishClose();
                 }
-            } catch (ObjectDisposedException ignored)
+            }
+            catch (ObjectDisposedException ignored)
             {
                 // timer is already disposed,
                 // e.g. due to shutdown
@@ -1117,7 +1128,8 @@ entry.ToString());
                 {
                     timer.Change(Timeout.Infinite, Timeout.Infinite);
                     timer.Dispose();
-                } catch (ObjectDisposedException ignored)
+                }
+                catch (ObjectDisposedException ignored)
                 {
                     // we are shutting down, ignore
                 }

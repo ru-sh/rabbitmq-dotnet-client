@@ -41,6 +41,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RabbitMQ.Client.Impl
 {
@@ -62,6 +64,41 @@ namespace RabbitMQ.Client.Impl
 
             var hashCode = Math.Abs(Guid.NewGuid().GetHashCode());
             return list.ElementAt<T>(hashCode % n);
+        }
+
+        public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, TimeSpan timeout, Action onTimeout)
+        {
+
+            var timeoutCancellationTokenSource = new CancellationTokenSource();
+
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+            if (completedTask == task)
+            {
+                timeoutCancellationTokenSource.Cancel();
+                return await task;
+            }
+            else
+            {
+                onTimeout();
+                return default(TResult);
+            }
+        }
+
+        public static async Task TimeoutAfter(this Task task, TimeSpan timeout, Action onTimeout)
+        {
+
+            var timeoutCancellationTokenSource = new CancellationTokenSource();
+
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+            if (completedTask == task)
+            {
+                timeoutCancellationTokenSource.Cancel();
+                await task;
+            }
+            else
+            {
+                onTimeout();
+            }
         }
     }
 }

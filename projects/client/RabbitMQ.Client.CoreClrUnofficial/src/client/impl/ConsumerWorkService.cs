@@ -54,7 +54,7 @@ namespace RabbitMQ.Client
             }
             catch (Exception e)
             {
-#if NETFX_CORE
+#if NETFX_CORE || CORECLR
                 // To end a task, return
                 return;
 #else

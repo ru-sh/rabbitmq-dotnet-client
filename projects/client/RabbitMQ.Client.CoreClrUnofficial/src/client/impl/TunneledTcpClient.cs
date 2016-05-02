@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RabbitMQ.Client
 {
@@ -77,7 +78,7 @@ namespace RabbitMQ.Client
 
         #region methods - CreateConnection
 
-        private delegate TcpClient CreateConnectionCaller(string destinationHost, int destinationPort, AddressFamily addressFamily, ProxyInfos proxyInfos);
+        private delegate Task<TcpClient> CreateConnectionCaller(string destinationHost, int destinationPort, AddressFamily addressFamily, ProxyInfos proxyInfos);
 
         private CreateConnectionCaller caller = new CreateConnectionCaller(createConnection);
 
@@ -87,17 +88,10 @@ namespace RabbitMQ.Client
         /// <remarks>Method invokes method 'createConnection' asynchronously.</remarks>
         /// <param name="host">Destination host name or IP address.</param>
         /// <param name="port">Port number to connect to on the destination host.</param>
-        /// <param name="requestCallback">Callback</param>
-        /// <param name="state"></param>
         /// <returns></returns>
-        public override IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
+        public override Task ConnectAsync(string host, int port)
         {
-            return caller.BeginInvoke(host, port, _addressFamily, _proxyInformation, requestCallback, state);
-        }
-
-        public override void EndConnect(IAsyncResult asyncResult)
-        {
-            _tcpClient = caller.EndInvoke(asyncResult);
+            return caller.Invoke(host, port, _addressFamily, _proxyInformation);
         }
 
         /// <summary>
@@ -116,7 +110,7 @@ namespace RabbitMQ.Client
         /// to make a pass through connection to the specified destination host on the specified
         /// port.  
         /// </remarks>
-        private static TcpClient createConnection(string destinationHost, int destinationPort, AddressFamily addressFamily, ProxyInfos proxyInfos)
+        private static async Task<TcpClient> createConnection(string destinationHost, int destinationPort, AddressFamily addressFamily, ProxyInfos proxyInfos)
         {
             var tcpClient = new TcpClient()
             {
@@ -128,13 +122,13 @@ namespace RabbitMQ.Client
                 //if (String.IsNullOrEmpty(proxyInfos.Host))
                 //    throw new ProxyException("ProxyHost property must contain a value.");
 
-                if (proxyInfos != null && proxyInfos.Uri!=null && !String.IsNullOrEmpty(proxyInfos.Uri.DnsSafeHost))
+                if (proxyInfos != null && proxyInfos.Uri != null && !String.IsNullOrEmpty(proxyInfos.Uri.DnsSafeHost))
                 {
                     if (proxyInfos.Uri.Port <= 0 || proxyInfos.Uri.Port > 65535)
                         throw new ProxyException("ProxyPort value must be greater than zero and less than 65535");
 
                     // attempt to open the connection
-                    tcpClient.Connect(proxyInfos.Uri.DnsSafeHost, proxyInfos.Uri.Port);
+                    await tcpClient.ConnectAsync(proxyInfos.Uri.DnsSafeHost, proxyInfos.Uri.Port);
 
                     //log.DebugFormat("Connection to proxy established: {0}", tcpClient.Client.RemoteEndPoint);
 
@@ -148,7 +142,7 @@ namespace RabbitMQ.Client
                     //log.DebugFormat("No proxy available. Connect directly to destination host.");
 
                     // attempt to open the connection
-                    tcpClient.Connect(destinationHost, destinationPort);
+                    await tcpClient.ConnectAsync(destinationHost, destinationPort);
 
                     //log.DebugFormat("Connection to destination established: {0}", tcpClient.Client.RemoteEndPoint);
 
@@ -399,6 +393,7 @@ namespace RabbitMQ.Client
             public string Message { get; set; }
         }
 
+#if !CORECLR
         /// <summary>
         /// Event arguments class for the EncryptAsyncCompleted event.
         /// </summary>
@@ -426,11 +421,13 @@ namespace RabbitMQ.Client
                 get { return _tcpClient; }
             }
         }
-
+#endif
         /// <summary>
         /// This exception is thrown when a general, unexpected proxy error.   
         /// </summary>
+#if !CORECLR
         [Serializable()]
+#endif
         public class ProxyException : Exception
         {
             /// <summary>
@@ -460,6 +457,7 @@ namespace RabbitMQ.Client
             {
             }
 
+#if !CORECLR
             /// <summary>
             /// Constructor.
             /// </summary>
@@ -470,6 +468,7 @@ namespace RabbitMQ.Client
                 : base(info, context)
             {
             }
+#endif
         }
 
         /// <summary>

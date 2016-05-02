@@ -149,20 +149,15 @@ namespace RabbitMQ.Util
             else
             {
                 Type t = value.GetType();
-#if NET451 || NET46
-                var props = t.GetProperties(BindingFlags.Instance
-                                                            | BindingFlags.Public
-                                                            | BindingFlags.DeclaredOnly);
-#else
-                var props = value.GetType().GetTypeInfo().DeclaredProperties;
-#endif
                 writer.WriteLine(t.FullName);
-#if !(NETFX_CORE)
-                foreach (PropertyInfo pi in t.GetProperties(BindingFlags.Instance
-                                                            | BindingFlags.Public
-                                                            | BindingFlags.DeclaredOnly))
-#else
+#if NETFX_CORE
                 foreach (PropertyInfo pi in t.GetRuntimeProperties())
+#elif CORECLR
+                foreach (PropertyInfo pi in t.GetTypeInfo().DeclaredProperties)
+#else
+                foreach (PropertyInfo pi in t.GetProperties(BindingFlags.Instance
+                                        | BindingFlags.Public
+                                        | BindingFlags.DeclaredOnly))
 #endif
                 {
                     if (pi.GetIndexParameters().Length == 0)

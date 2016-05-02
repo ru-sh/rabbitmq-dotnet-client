@@ -70,14 +70,14 @@ namespace RabbitMQ.Util
                 }
             }
 
-#if NETFX_CORE
+#if NETFX_CORE || CORECLR
             q.Add(item);
 #else
             try
             {
                 q.Add(item);
             }
-            catch (ThreadStartException tie)
+            catch (ThreadInterruptedException tie)
             {
                 // most likely due to shutdown. ok.
             }

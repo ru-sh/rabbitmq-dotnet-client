@@ -45,7 +45,10 @@ namespace RabbitMQ.Client
     /// <summary>
     /// A decoded AMQP content header frame.
     /// </summary>
-    public interface IContentHeader //: ICloneable
+    public interface IContentHeader
+#if !CORECLR
+        : ICloneable
+#endif
     {
         /// <summary>
         /// Retrieve the AMQP class ID of this content header.

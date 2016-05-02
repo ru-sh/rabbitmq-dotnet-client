@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Client.ApigenBoots
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Client.Apigen", "projects\client\Apigen\RabbitMQ.Client.Apigen.csproj", "{9E8B8DC5-3837-46E9-90D7-8391CC62AB45}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Client", "projects\client\RabbitMQ.Client\RabbitMQ.Client.csproj", "{71713FDD-D5EC-40B2-A924-76F80AD57E12}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Client", "projects\client\RabbitMQ.Client.CoreClrUnofficial\RabbitMQ.Client.csproj", "{71713FDD-D5EC-40B2-A924-76F80AD57E12}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9E8B8DC5-3837-46E9-90D7-8391CC62AB45} = {9E8B8DC5-3837-46E9-90D7-8391CC62AB45}
 	EndProjectSection

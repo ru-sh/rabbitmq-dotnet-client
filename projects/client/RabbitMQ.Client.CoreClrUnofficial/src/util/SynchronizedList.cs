@@ -44,7 +44,9 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Util
 {
-    //[Serializable]
+#if !CORECLR
+    [Serializable]
+#endif
     internal class SynchronizedList<T> : IList<T>
     {
         private readonly IList<T> list;

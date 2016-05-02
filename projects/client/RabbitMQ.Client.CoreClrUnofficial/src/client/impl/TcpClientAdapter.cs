@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RabbitMQ.Client
 {
@@ -21,31 +22,28 @@ namespace RabbitMQ.Client
             _tcpClient = tcpClient;
         }
 
-        public virtual IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
+        public virtual Task ConnectAsync(string host, int port)
         {
             assertTcpClient();
-            
-            return _tcpClient.BeginConnect(host, port, requestCallback, state);
-        }
 
+            return _tcpClient.ConnectAsync(host, port);
+        }
+        
         private void assertTcpClient()
         {
             if (_tcpClient == null)
                 throw new InvalidOperationException("Field tcpClient is null. Should have been passed to constructor.");
         }
-
-        public virtual void EndConnect(IAsyncResult asyncResult)
-        {
-            assertTcpClient();
-
-            _tcpClient.EndConnect(asyncResult);
-        }
-
+        
         public virtual void Close()
         {
             assertTcpClient();
 
+#if CORECLR
+            _tcpClient.Dispose();
+#else
             _tcpClient.Close();
+#endif
         }
 
         public virtual NetworkStream GetStream()

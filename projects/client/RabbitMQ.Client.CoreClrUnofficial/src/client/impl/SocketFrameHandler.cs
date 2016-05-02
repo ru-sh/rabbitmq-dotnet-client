@@ -61,7 +61,6 @@ namespace RabbitMQ.Client.Impl
 
         public NetworkBinaryReader m_reader;
         public ITcpClient m_socket;
-
         public NetworkBinaryWriter m_writer;
         private readonly object _semaphore = new object();
         private bool _closed;
@@ -77,7 +76,7 @@ namespace RabbitMQ.Client.Impl
                 try
                 {
                     m_socket = socketFactory(AddressFamily.InterNetworkV6);
-                    Connect(m_socket, endpoint, connectionTimeout);
+                    ConnectAsync(m_socket, endpoint, connectionTimeout).Wait();
                 }
                 catch (ConnectFailureException) // could not connect using IPv6
                 {
@@ -93,11 +92,11 @@ namespace RabbitMQ.Client.Impl
             if (m_socket == null)
             {
                 m_socket = socketFactory(AddressFamily.InterNetwork);
-                Connect(m_socket, endpoint, connectionTimeout);
+                ConnectAsync(m_socket, endpoint, connectionTimeout).Wait();
             }
 
             Stream netstream = m_socket.GetStream();
-            netstream.ReadTimeout  = readTimeout;
+            netstream.ReadTimeout = readTimeout;
             netstream.WriteTimeout = writeTimeout;
 
             if (endpoint.Ssl.Enabled)
@@ -112,9 +111,13 @@ namespace RabbitMQ.Client.Impl
                     throw;
                 }
             }
-            m_reader = new NetworkBinaryReader((netstream));
-            m_writer = new NetworkBinaryWriter((netstream));
-
+#if !CORECLR
+            m_reader = new NetworkBinaryReader(new BufferedStream(netstream));
+            m_writer = new NetworkBinaryWriter(new BufferedStream(netstream));
+#else
+            m_reader = new NetworkBinaryReader(netstream);
+            m_writer = new NetworkBinaryWriter(netstream);
+#endif
             m_writeableStateTimeout = writeTimeout;
         }
 
@@ -147,7 +150,7 @@ namespace RabbitMQ.Client.Impl
                 try
                 {
                     if (m_socket.Connected)
-                    {                        
+                    {
                         m_socket.ReceiveTimeout = value;
                     }
                 }
@@ -179,17 +182,13 @@ namespace RabbitMQ.Client.Impl
                     {
                         try
                         {
-                            
-                        } catch (ArgumentException _)
+
+                        }
+                        catch (ArgumentException _)
                         {
                             // ignore, we are closing anyway
                         };
-
-#if NET451 || NET46
                         m_socket.Close();
-#else
-                        m_socket.Dispose();
-#endif
                     }
                     catch (Exception _)
                     {
@@ -215,7 +214,7 @@ namespace RabbitMQ.Client.Impl
         {
             lock (m_writer)
             {
-                m_writer.Write(new byte[] {0x41, 0x4D, 0x51, 0x50}); //Encoding.ASCII.GetBytes("AMQP"));
+                m_writer.Write(Encoding.ASCII.GetBytes("AMQP"));
                 if (Endpoint.Protocol.Revision != 0)
                 {
                     m_writer.Write((byte)0);
@@ -249,7 +248,7 @@ namespace RabbitMQ.Client.Impl
             lock (m_writer)
             {
                 m_socket.Client.Poll(m_writeableStateTimeout, SelectMode.SelectWrite);
-                foreach(var f in frames)
+                foreach (var f in frames)
                 {
                     f.WriteTo(m_writer);
                 }
@@ -265,12 +264,16 @@ namespace RabbitMQ.Client.Impl
             }
         }
 
-        private void Connect(ITcpClient socket, AmqpTcpEndpoint endpoint, int timeout)
+        private async Task ConnectAsync(ITcpClient socket, AmqpTcpEndpoint endpoint, int timeout)
         {
             try
             {
-                // todo use timeout
-                await socket.ConnectAsync(endpoint.HostName, endpoint.Port);
+                await socket.ConnectAsync(endpoint.HostName, endpoint.Port).TimeoutAfter(TimeSpan.FromMilliseconds(timeout),
+                    () =>
+                    {
+                        socket.Close();
+                        throw new TimeoutException("Connection to " + endpoint + " timed out");
+                    });
             }
             catch (ArgumentException e)
             {

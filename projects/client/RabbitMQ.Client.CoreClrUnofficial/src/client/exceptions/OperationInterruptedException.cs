@@ -50,7 +50,9 @@ namespace RabbitMQ.Client.Exceptions
     /// operation, an OperationInterruptedException will be thrown to
     /// the caller of IModel.QueueDeclare.
     /// </summary>
-    //[Serializable]
+#if !CORECLR
+    [Serializable]
+#endif
     public class OperationInterruptedException
         // TODO: inherit from OperationCanceledException
         : Exception
@@ -88,7 +90,7 @@ namespace RabbitMQ.Client.Exceptions
         {
         }
 
-#if !(NETFX_CORE)
+#if !(NETFX_CORE || CORECLR)
         protected OperationInterruptedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

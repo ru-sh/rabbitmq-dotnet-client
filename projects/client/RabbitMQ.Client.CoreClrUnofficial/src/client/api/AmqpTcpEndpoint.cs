@@ -55,7 +55,10 @@ namespace RabbitMQ.Client
     /// the Uri "Scheme" property is ignored: only the "Host" and
     /// "Port" properties are extracted.
     /// </para>
-    public class AmqpTcpEndpoint : ICloneable
+    public class AmqpTcpEndpoint
+#if !CORECLR
+        : ICloneable
+#endif
     {
         /// <summary>
         /// Default Amqp ssl port.
