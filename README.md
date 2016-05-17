@@ -4,6 +4,7 @@ The original RabbitMQ .Net client is maintained by the [RabbitMQ team at Pivotal
 
 
 ## Working in IPv6 networks (including working in Docker)
+```
 var factory = new ConnectionFactory()
 {
   HostName = "localhost" ,
@@ -13,7 +14,7 @@ var factory = new ConnectionFactory()
     return new TcpClientAdapter(tcpClient);
   }
 };
-
+```
 
 ## NuGet artifacts
 https://www.nuget.org/packages/RabbitMQ.Client.CoreClrUnofficial/
