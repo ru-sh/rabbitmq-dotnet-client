@@ -1,26 +1,28 @@
-## RabbitMQ .NET Client [![Build status](https://ci.appveyor.com/api/projects/status/33srpo7owl1h3y4e?svg=true)](https://ci.appveyor.com/project/rabbitmq/rabbitmq-dotnet-client)
-
+## RabbitMQ .NET Client (Unofficial CoreClr version)
 This repository contains source code of the [RabbitMQ .NET client](http://www.rabbitmq.com/dotnet.html).
-The client is maintained by the [RabbitMQ team at Pivotal](http://github.com/rabbitmq/).
+The original RabbitMQ .Net client is maintained by the [RabbitMQ team at Pivotal](http://github.com/rabbitmq/).
 
 
-## Dependency (Binaries and Nuget Artifact)
+## Working in IPv6 networks (including working in Docker)
+var factory = new ConnectionFactory()
+{
+  HostName = "localhost" ,
+  SocketFactory = family =>
+  {
+    var tcpClient = new TcpClient(AddressFamily.InterNetwork);
+    return new TcpClientAdapter(tcpClient);
+  }
+};
 
-There are two ways to consume the client:
 
- * [Binary releases](http://www.rabbitmq.com/download.html)
- * [NuGet artifacts](https://www.nuget.org/packages/RabbitMQ.Client/)
+## NuGet artifacts
+https://www.nuget.org/packages/RabbitMQ.Client.CoreClrUnofficial/
 
 
 ## Tutorials and Documentation
 
  * [Tutorials](http://www.rabbitmq.com/getstarted.html)
  * [Documentation guide](http://www.rabbitmq.com/dotnet.html)
-
-
-## Supported Platforms and .NET Releases
-
-The client requires .NET 4.5 or later. It supports Linux and OS X on [Mono](http://www.mono-project.com/).
 
 
 ## Contributing
