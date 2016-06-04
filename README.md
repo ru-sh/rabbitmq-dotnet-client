@@ -3,7 +3,8 @@ This repository contains source code of the [RabbitMQ .NET client](http://www.ra
 The original RabbitMQ .Net client is maintained by the [RabbitMQ team at Pivotal](http://github.com/rabbitmq/).
 
 
-## Working in IPv6 networks (including working in Docker)
+## Working in IPv6 networks (including working in Docker container)
+```
 var factory = new ConnectionFactory()
 {
   HostName = "localhost" ,
@@ -13,7 +14,7 @@ var factory = new ConnectionFactory()
     return new TcpClientAdapter(tcpClient);
   }
 };
-
+```
 
 ## NuGet artifacts
 https://www.nuget.org/packages/RabbitMQ.Client.CoreClrUnofficial/
