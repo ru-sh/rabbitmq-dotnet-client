@@ -49,10 +49,10 @@ namespace RabbitMQ.Client
         public virtual NetworkStream GetStream()
         {
             assertTcpClient();
-
             return _tcpClient.GetStream();
         }
 
+#if !CORECLR
         public virtual Socket Client
         {
             get
@@ -66,6 +66,8 @@ namespace RabbitMQ.Client
                 _tcpClient.Client = value;
             }
         }
+#endif
+
 
         public virtual bool Connected
         {

@@ -115,7 +115,7 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public Connection(IConnectionFactory factory, bool insist, IFrameHandler frameHandler, string clientProvidedName = null)
         {
-            clientProvidedName = clientProvidedName;
+            ClientProvidedName = clientProvidedName;
             KnownHosts = null;
             FrameMax = 0;
             m_factory = factory;
@@ -277,17 +277,20 @@ namespace RabbitMQ.Client.Framing.Impl
 
         public AmqpTcpEndpoint[] KnownHosts { get; set; }
 
-#if !NETFX_CORE
+#if !NETFX_CORE && !CORECLR
         public EndPoint LocalEndPoint
         {
             get { return m_frameHandler.LocalEndPoint; }
         }
 #endif
 
+#if !CORECLR
         public int LocalPort
         {
             get { return m_frameHandler.LocalPort; }
         }
+#endif
+
 
         ///<summary>Another overload of a Protocol property, useful
         ///for exposing a tighter type.</summary>
@@ -296,17 +299,20 @@ namespace RabbitMQ.Client.Framing.Impl
             get { return (ProtocolBase)Endpoint.Protocol; }
         }
 
-#if !NETFX_CORE
+#if !NETFX_CORE && !CORECLR
         public EndPoint RemoteEndPoint
         {
             get { return m_frameHandler.RemoteEndPoint; }
         }
 #endif
 
-        public int RemotePort
+#if !CORECLR
+public int RemotePort
         {
             get { return m_frameHandler.RemotePort; }
         }
+#endif
+
 
         public IDictionary<string, object> ServerProperties { get; set; }
 

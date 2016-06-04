@@ -47,14 +47,17 @@ namespace RabbitMQ.Client
     /// </summary>
     public interface NetworkConnection
     {
-        /// <summary>
-        /// Local port.
-        /// </summary>
+#if !CORECLR
+    /// <summary>
+    /// Local port.
+    /// </summary>
         int LocalPort { get; }
 
         /// <summary>
         /// Remote port.
         /// </summary>
         int RemotePort { get; }
+#endif
+
     }
 }

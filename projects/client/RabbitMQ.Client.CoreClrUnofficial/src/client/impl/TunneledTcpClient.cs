@@ -4,7 +4,9 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
+#if !CORECLR
 using System.Runtime.Serialization;
+#endif
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -481,6 +483,11 @@ namespace RabbitMQ.Client
                 if (client == null)
                     throw new ArgumentNullException("client");
 
+#if CORECLR
+                return "Unavailable";
+#else
+
+
                 string host = null;
                 try
                 {
@@ -490,10 +497,15 @@ namespace RabbitMQ.Client
                 { };
 
                 return host;
+#endif
             }
 
             internal static string GetPort(TcpClient client)
             {
+
+#if CORECLR
+                return "Unavailable";
+#else
                 if (client == null)
                     throw new ArgumentNullException("client");
 
@@ -506,6 +518,7 @@ namespace RabbitMQ.Client
                 { };
 
                 return port;
+#endif
             }
 
         }

@@ -100,3 +100,5 @@ projects/client/Unit*/TestResult.xml
 .sw?
 .*.sw?
 rabbit.snk
+
+project.lock.json

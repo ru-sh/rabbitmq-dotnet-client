@@ -15,7 +15,9 @@ namespace RabbitMQ.Client
 
         int ReceiveTimeout { get; set; }
 
+#if !CORECLR
         Socket Client { get; set; }
+#endif
 
         Task ConnectAsync(string host, int port);
 

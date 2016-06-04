@@ -39,7 +39,11 @@
 //---------------------------------------------------------------------------
 
 using System;
+
+#if !CORECLR
 using System.Runtime.Serialization;
+#endif
+
 
 namespace RabbitMQ.Client.Exceptions
 {

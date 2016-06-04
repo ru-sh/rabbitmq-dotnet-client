@@ -48,17 +48,22 @@ namespace RabbitMQ.Client.Impl
     {
         AmqpTcpEndpoint Endpoint { get; }
 
-#if !NETFX_CORE
+#if !NETFX_CORE && !CORECLR
         EndPoint LocalEndPoint { get; }
 #endif
 
+#if !CORECLR
         int LocalPort { get; }
+#endif
 
-#if !NETFX_CORE
+
+#if !NETFX_CORE && !CORECLR
         EndPoint RemoteEndPoint { get; }
 #endif
 
+#if !CORECLR
         int RemotePort { get; }
+#endif
 
         ///<summary>Socket read timeout, in milliseconds. Zero signals "infinity".</summary>
         int ReadTimeout { set; }

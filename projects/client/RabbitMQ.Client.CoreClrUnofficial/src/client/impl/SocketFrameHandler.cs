@@ -103,7 +103,7 @@ namespace RabbitMQ.Client.Impl
             {
                 try
                 {
-                    netstream = SslHelper.TcpUpgrade(netstream, endpoint.Ssl);
+                    netstream = SslHelper.TcpUpgradeAsync(netstream, endpoint.Ssl).Result;
                 }
                 catch (Exception)
                 {
@@ -111,18 +111,15 @@ namespace RabbitMQ.Client.Impl
                     throw;
                 }
             }
-#if !CORECLR
             m_reader = new NetworkBinaryReader(new BufferedStream(netstream));
             m_writer = new NetworkBinaryWriter(new BufferedStream(netstream));
-#else
-            m_reader = new NetworkBinaryReader(netstream);
-            m_writer = new NetworkBinaryWriter(netstream);
-#endif
+
             m_writeableStateTimeout = writeTimeout;
         }
 
         public AmqpTcpEndpoint Endpoint { get; set; }
 
+#if !CORECLR
         public EndPoint LocalEndPoint
         {
             get { return m_socket.Client.LocalEndPoint; }
@@ -142,6 +139,7 @@ namespace RabbitMQ.Client.Impl
         {
             get { return ((IPEndPoint)LocalEndPoint).Port; }
         }
+#endif
 
         public int ReadTimeout
         {
@@ -168,7 +166,10 @@ namespace RabbitMQ.Client.Impl
             set
             {
                 m_writeableStateTimeout = value;
-                m_socket.Client.SendTimeout = value;
+#if !CORECLR
+m_socket.Client.SendTimeout = value;
+#endif
+
             }
         }
 
@@ -237,7 +238,9 @@ namespace RabbitMQ.Client.Impl
         {
             lock (m_writer)
             {
-                m_socket.Client.Poll(m_writeableStateTimeout, SelectMode.SelectWrite);
+#if !CORECLR
+m_socket.Client.Poll(m_writeableStateTimeout, SelectMode.SelectWrite);
+#endif
                 frame.WriteTo(m_writer);
                 m_writer.Flush();
             }
@@ -247,7 +250,10 @@ namespace RabbitMQ.Client.Impl
         {
             lock (m_writer)
             {
-                m_socket.Client.Poll(m_writeableStateTimeout, SelectMode.SelectWrite);
+#if !CORECLR
+m_socket.Client.Poll(m_writeableStateTimeout, SelectMode.SelectWrite);
+#endif
+
                 foreach (var f in frames)
                 {
                     f.WriteTo(m_writer);

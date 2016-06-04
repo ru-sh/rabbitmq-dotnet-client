@@ -287,10 +287,13 @@ namespace RabbitMQ.Client.Framing.Impl
             set { m_delegate.KnownHosts = value; }
         }
 
+#if !CORECLR
         public int LocalPort
         {
             get { return m_delegate.LocalPort; }
         }
+#endif
+
 
         public ProtocolBase Protocol
         {
@@ -307,10 +310,13 @@ namespace RabbitMQ.Client.Framing.Impl
             get { return m_recordedQueues; }
         }
 
-        public int RemotePort
+#if !CORECLR
+public int RemotePort
         {
             get { return m_delegate.RemotePort; }
         }
+#endif
+
 
         public IDictionary<string, object> ServerProperties
         {
